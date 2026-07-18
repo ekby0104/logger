@@ -4,8 +4,8 @@
     "CFBundleDisplayName" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "HaruLog" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "하루로그" } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dailogger" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "데이로거" } }
       }
     }
   },

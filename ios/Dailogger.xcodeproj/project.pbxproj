@@ -7,11 +7,11 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		AA0000000000000000000004 /* HaruLog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HaruLog.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000004 /* Dailogger.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Dailogger.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		AA0000000000000000000001 /* HaruLog */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = HaruLog; sourceTree = "<group>"; };
+		AA0000000000000000000001 /* Dailogger */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Dailogger; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -28,7 +28,7 @@
 		AA0000000000000000000002 = {
 			isa = PBXGroup;
 			children = (
-				AA0000000000000000000001 /* HaruLog */,
+				AA0000000000000000000001 /* Dailogger */,
 				AA0000000000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -36,7 +36,7 @@
 		AA0000000000000000000003 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				AA0000000000000000000004 /* HaruLog.app */,
+				AA0000000000000000000004 /* Dailogger.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -44,9 +44,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		AA0000000000000000000005 /* HaruLog */ = {
+		AA0000000000000000000005 /* Dailogger */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AA000000000000000000000B /* Build configuration list for PBXNativeTarget "HaruLog" */;
+			buildConfigurationList = AA000000000000000000000B /* Build configuration list for PBXNativeTarget "Dailogger" */;
 			buildPhases = (
 				AA0000000000000000000007 /* Sources */,
 				AA0000000000000000000008 /* Frameworks */,
@@ -57,13 +57,13 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				AA0000000000000000000001 /* HaruLog */,
+				AA0000000000000000000001 /* Dailogger */,
 			);
-			name = HaruLog;
+			name = Dailogger;
 			packageProductDependencies = (
 			);
-			productName = HaruLog;
-			productReference = AA0000000000000000000004 /* HaruLog.app */;
+			productName = Dailogger;
+			productReference = AA0000000000000000000004 /* Dailogger.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -81,7 +81,7 @@
 					};
 				};
 			};
-			buildConfigurationList = AA000000000000000000000A /* Build configuration list for PBXProject "HaruLog" */;
+			buildConfigurationList = AA000000000000000000000A /* Build configuration list for PBXProject "Dailogger" */;
 			compatibilityVersion = "Xcode 15.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -96,7 +96,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				AA0000000000000000000005 /* HaruLog */,
+				AA0000000000000000000005 /* Dailogger */,
 			);
 		};
 /* End PBXProject section */
@@ -245,7 +245,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		AA000000000000000000000A /* Build configuration list for PBXProject "HaruLog" */ = {
+		AA000000000000000000000A /* Build configuration list for PBXProject "Dailogger" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AA000000000000000000000C /* Debug */,
@@ -254,7 +254,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AA000000000000000000000B /* Build configuration list for PBXNativeTarget "HaruLog" */ = {
+		AA000000000000000000000B /* Build configuration list for PBXNativeTarget "Dailogger" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AA000000000000000000000E /* Debug */,

@@ -1,15 +1,15 @@
 # XcodeGen fallback — Xcode 16 미만이거나 .xcodeproj가 열리지 않을 때만 사용:
 #   brew install xcodegen && cd ios && xcodegen
-name: HaruLog
+name: Dailogger
 options:
   deploymentTarget:
     iOS: "17.0"
 targets:
-  HaruLog:
+  Dailogger:
     type: application
     platform: iOS
     sources:
-      - HaruLog
+      - Dailogger
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ekby0104.harulog

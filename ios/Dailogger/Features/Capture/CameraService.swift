@@ -7,7 +7,7 @@ import os
 final class CameraService: NSObject, AVCaptureFileOutputRecordingDelegate {
     let session = AVCaptureSession()
 
-    private let log = Logger(subsystem: "com.harulog.app", category: "camera")
+    private let log = Logger(subsystem: "com.dailogger.app", category: "camera")
 
     var onReady: (() -> Void)?
     var onUnavailable: (() -> Void)?
@@ -15,7 +15,7 @@ final class CameraService: NSObject, AVCaptureFileOutputRecordingDelegate {
     var onSegmentFinished: ((URL) -> Void)?
     var onFlipped: ((Bool) -> Void)?
 
-    private let sessionQueue = DispatchQueue(label: "com.harulog.camera.session")
+    private let sessionQueue = DispatchQueue(label: "com.dailogger.camera.session")
     private let movieOutput = AVCaptureMovieFileOutput()
     private var videoInput: AVCaptureDeviceInput?
     private var isConfigured = false

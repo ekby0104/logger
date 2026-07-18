@@ -12,7 +12,7 @@ extension Color {
     }
 }
 
-/// HaruLog design tokens (from 하루로그-wireframe.dc.html)
+/// Dailogger design tokens (from 하루로그-wireframe.dc.html)
 enum HL {
     static let ink = Color(hex: 0x131826)
     static let blue = Color(hex: 0x0967F5)

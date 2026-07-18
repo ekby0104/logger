@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 @main
-struct HaruLogApp: App {
+struct DailoggerApp: App {
     var body: some Scene {
         WindowGroup {
             RootTabView()

@@ -1,4 +1,4 @@
-# HaruLog iOS
+# Dailogger (데이로거) iOS
 
 SwiftUI 네이티브 앱. `docs/` 설계 문서의 Phase 0~4에 해당하는 스캐폴드입니다.
 
@@ -13,7 +13,7 @@ SwiftUI 네이티브 앱. `docs/` 설계 문서의 Phase 0~4에 해당하는 스
 git clone <repo-url>
 cd logger
 git checkout claude/harulog-wireframe-impl-1tefir
-open ios/HaruLog.xcodeproj
+open ios/Dailogger.xcodeproj
 ```
 
 1. Xcode에서 프로젝트 열기
@@ -29,7 +29,7 @@ open ios/HaruLog.xcodeproj
 ```sh
 brew install xcodegen
 cd ios && xcodegen
-open HaruLog.xcodeproj
+open Dailogger.xcodeproj
 ```
 
 ## 현재 구현 상태 (Phase 0~5)
@@ -56,7 +56,7 @@ open HaruLog.xcodeproj
 ## TestFlight 배포 절차
 
 1. **App Store Connect에서 앱 등록** (최초 1회): [appstoreconnect.apple.com](https://appstoreconnect.apple.com) → 앱 → ＋ → 신규 앱
-   - 플랫폼 iOS, 이름 `하루로그`(또는 HaruLog), 번들 ID `com.ekby0104.harulog`(Xcode에서 Team 선택 시 자동 등록됨), SKU는 아무 문자열
+   - 플랫폼 iOS, 이름 `데이로거`(또는 Dailogger), 번들 ID `com.dailogger.app`(Xcode에서 Team 선택 시 자동 등록됨), SKU는 아무 문자열
 2. Xcode: Signing & Capabilities → **Team 선택** 확인
 3. 상단 기기 선택을 **Any iOS Device (arm64)** 로 변경
 4. 메뉴 **Product → Archive**
@@ -70,8 +70,8 @@ open HaruLog.xcodeproj
 ## 구조
 
 ```
-ios/HaruLog/
-├── HaruLogApp.swift        # @main, SwiftData 컨테이너
+ios/Dailogger/
+├── DailoggerApp.swift        # @main, SwiftData 컨테이너
 ├── RootTabView.swift       # 탭 셸 + 커스텀 탭바 + 오버레이 라우팅
 ├── AppModel.swift          # @Observable 앱 상태 (탭·오버레이·녹화·토스트)
 ├── DesignSystem/           # HL 토큰, hardCard, 필·뱃지·버튼·토스트

@@ -17,7 +17,7 @@ struct DailyBlogView: View {
     }
 
     private var shareText: String {
-        "\(model.blogTitle)\n\n\(model.blogBody)\n\n" + String(localized: "— HaruLog, \(dateLabel)")
+        "\(model.blogTitle)\n\n\(model.blogBody)\n\n" + String(localized: "— Dailogger, \(dateLabel)")
     }
 
     var body: some View {

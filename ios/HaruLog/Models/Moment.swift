@@ -19,6 +19,8 @@ final class Moment {
     var moodRaw: String
     var duration: TimeInterval
     var placeName: String
+    var latitude: Double?
+    var longitude: Double?
     var videoFileName: String?
     var thumbnailFileName: String?
 
@@ -30,6 +32,8 @@ final class Moment {
         mood: Mood,
         duration: TimeInterval,
         placeName: String,
+        latitude: Double? = nil,
+        longitude: Double? = nil,
         videoFileName: String? = nil,
         thumbnailFileName: String? = nil
     ) {
@@ -40,6 +44,8 @@ final class Moment {
         self.moodRaw = mood.rawValue
         self.duration = duration
         self.placeName = placeName
+        self.latitude = latitude
+        self.longitude = longitude
         self.videoFileName = videoFileName
         self.thumbnailFileName = thumbnailFileName
     }

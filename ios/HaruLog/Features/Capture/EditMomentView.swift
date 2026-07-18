@@ -9,8 +9,26 @@ struct EditMomentView: View {
     private let moodColumns = [GridItem(.adaptive(minimum: 92), spacing: 8)]
 
     private var draftDurationLabel: String {
+        if let editing = model.editingMoment {
+            return editing.durationLabel
+        }
         let seconds = max(model.recordedSeconds, 5)
         return "\(seconds / 60):" + String(format: "%02d", seconds % 60)
+    }
+
+    private var placeLabel: String {
+        model.editingMoment?.placeName ?? model.currentPlaceName ?? "Locating…"
+    }
+
+    private var timeLabel: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        if let editing = model.editingMoment {
+            formatter.dateFormat = "MMM d · h:mm a"
+            return formatter.string(from: editing.createdAt)
+        }
+        formatter.dateFormat = "h:mm a"
+        return "Today · " + formatter.string(from: .now)
     }
 
     var body: some View {
@@ -22,7 +40,9 @@ struct EditMomentView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     ZStack {
-                        if let thumbnail = model.draftThumbnail {
+                        if let editing = model.editingMoment {
+                            MomentThumb(moment: editing, radius: 16)
+                        } else if let thumbnail = model.draftThumbnail {
                             Color.clear
                                 .overlay {
                                     Image(uiImage: thumbnail)
@@ -84,8 +104,8 @@ struct EditMomentView: View {
                     sectionLabel("Location · Time")
                         .padding(.top, 20)
                     VStack(spacing: 10) {
-                        infoRow(systemImage: "mappin.and.ellipse", text: "Seongsu-dong, Seoul")
-                        infoRow(systemImage: "clock", text: "Today 8:12 PM")
+                        infoRow(systemImage: "mappin.and.ellipse", text: placeLabel)
+                        infoRow(systemImage: "clock", text: timeLabel)
                     }
 
                     PrimaryButton(

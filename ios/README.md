@@ -42,6 +42,8 @@ open HaruLog.xcodeproj
 | 세그먼트 병합·썸네일 | ✅ AVMutableComposition 병합 + AVAssetImageGenerator 썸네일 → Documents/Moments 저장 |
 | Edit → 저장 → Today 반영 → 토스트 | ✅ 실제 영상·썸네일 연결 |
 | 스토리 뷰어 (좌/우 탭 이동) | ✅ 녹화된 클립 자동 재생 — 스토리식 자동 진행·일시정지는 Phase 7 |
+| 위치·시간 | ✅ CoreLocation + 역지오코딩으로 실제 장소명·좌표 저장, 카메라·편집 화면에 실시각 표시 |
+| 모먼트 수정 | ✅ 뷰어 → Edit에서 캡션·무드를 기존 모먼트에 반영 (새로 생성 X) |
 | 데일리 블로그 AI | Phase 8 예정 (Foundation Models) |
 | 계정·로그인 | 2차 릴리즈 백로그 (Sign in with Apple 예정) |
 

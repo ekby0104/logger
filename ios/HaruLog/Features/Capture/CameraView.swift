@@ -45,6 +45,14 @@ struct CameraView: View {
         .onDisappear { model.camera.stop() }
     }
 
+    private var locationPillLabel: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.dateFormat = "h:mm a"
+        let time = formatter.string(from: .now)
+        return "\(model.currentPlaceName ?? "Locating…") · \(time)"
+    }
+
     private var statusMessage: some View {
         VStack(spacing: 12) {
             if model.cameraPermissionDenied {
@@ -114,7 +122,7 @@ struct CameraView: View {
                 HStack(spacing: 5) {
                     Image(systemName: "mappin.and.ellipse")
                         .font(.system(size: 11, weight: .bold))
-                    Text("Seongsu, Seoul · 8:12 PM")
+                    Text(locationPillLabel)
                         .font(.hl(12))
                 }
                 .foregroundStyle(.white)

@@ -1,3 +1,4 @@
+import CoreLocation
 import Foundation
 import SwiftData
 import SwiftUI
@@ -32,11 +33,18 @@ final class AppModel {
     var cameraPermissionDenied = false
     var segmentURLs: [URL] = []
 
+    // Location
+    @ObservationIgnored let location = LocationService()
+    var currentPlaceName: String?
+    @ObservationIgnored private var currentCoordinate: CLLocationCoordinate2D?
+
     // Draft (Edit screen)
     var draftCaption = ""
     var draftMood: Mood = .calm
     var draftThumbnail: UIImage?
     var isMerging = false
+    /// Non-nil when editing an existing moment (from the viewer) instead of creating a new one.
+    var editingMoment: Moment?
     @ObservationIgnored private var draftVideoTempURL: URL?
 
     // Viewer
@@ -57,6 +65,10 @@ final class AppModel {
             self?.segmentURLs.append(url)
             self?.mergeWhenReady()
         }
+        location.onPlaceResolved = { [weak self] name, coordinate in
+            self?.currentPlaceName = name
+            self?.currentCoordinate = coordinate
+        }
     }
 
     var recordedSeconds: Int {
@@ -73,6 +85,7 @@ final class AppModel {
         resetCapture()
         draftMood = .calm
         overlay = .camera
+        location.requestPlace()
     }
 
     func closeOverlay() {
@@ -91,10 +104,10 @@ final class AppModel {
     }
 
     func editFromViewer() {
-        if let moment = viewerMoment {
-            draftCaption = moment.caption
-            draftMood = moment.mood
-        }
+        guard let moment = viewerMoment else { return }
+        editingMoment = moment
+        draftCaption = moment.caption
+        draftMood = moment.mood
         overlay = .edit
     }
 
@@ -165,6 +178,20 @@ final class AppModel {
     // MARK: - Saving
 
     func saveMoment(context: ModelContext) {
+        // Editing an existing moment: update it in place.
+        if let editing = editingMoment {
+            if !draftCaption.isEmpty {
+                editing.caption = draftCaption
+            }
+            editing.mood = draftMood
+            resetCapture()
+            viewerMoment = nil
+            overlay = nil
+            flashToast("Moment updated")
+            return
+        }
+
+        // New moment from the camera flow.
         let seconds = max(recordedSeconds, 5)
         let id = UUID()
 
@@ -184,7 +211,9 @@ final class AppModel {
             caption: draftCaption.isEmpty ? "A moment just captured." : draftCaption,
             mood: draftMood,
             duration: TimeInterval(seconds),
-            placeName: "Seongsu-dong, Seoul",
+            placeName: currentPlaceName ?? "Somewhere today",
+            latitude: currentCoordinate?.latitude,
+            longitude: currentCoordinate?.longitude,
             videoFileName: videoName,
             thumbnailFileName: thumbnailName
         )
@@ -225,6 +254,7 @@ final class AppModel {
         draftThumbnail = nil
         draftCaption = ""
         isMerging = false
+        editingMoment = nil
     }
 
     private func stopTimer() {

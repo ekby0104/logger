@@ -1,18 +1,24 @@
 import AVKit
 import SwiftUI
 import SwiftData
+import UIKit
 
 /// Story-style viewer:
-/// - tap left/right halves to move between moments
+/// - quick tap (< 0.25s) on the left/right half moves to the previous/next moment
+/// - holding (>= 0.25s) pauses; releasing resumes without moving
 /// - clips play automatically and advance to the next moment when they end
 /// - moments without a clip advance after a fixed interval
-/// - press and hold anywhere to pause
 struct MomentViewerView: View {
     @Environment(AppModel.self) private var model
     @Query(sort: \Moment.createdAt) private var moments: [Moment]
     @State private var player: AVPlayer?
     @State private var progress: Double = 0
     @State private var isPaused = false
+    @State private var pressStartDate: Date?
+    @State private var pauseTask: Task<Void, Never>?
+
+    /// A touch shorter than this is a navigation tap; longer is a hold-to-pause.
+    private let holdThreshold = 0.25
 
     /// Display time for moments that have no recorded clip (seed/mock data).
     private let mockDurationSeconds = 5.0
@@ -50,9 +56,16 @@ struct MomentViewerView: View {
             )
             .ignoresSafeArea()
 
-            HStack(spacing: 0) {
-                tapZone { step(-1) }
-                tapZone { step(1) }
+            GeometryReader { geometry in
+                Color.clear
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { _ in touchBegan() }
+                            .onEnded { value in
+                                touchEnded(at: value.location, width: geometry.size.width)
+                            }
+                    )
             }
 
             if isPaused {
@@ -95,7 +108,10 @@ struct MomentViewerView: View {
         }
         .onAppear { updatePlayer() }
         .onChange(of: model.viewerMoment?.id) { updatePlayer() }
-        .onDisappear { tearDownPlayer() }
+        .onDisappear {
+            pauseTask?.cancel()
+            tearDownPlayer()
+        }
         .onReceive(ticker) { _ in tick() }
         .onReceive(
             NotificationCenter.default.publisher(for: AVPlayerItem.didPlayToEndTimeNotification)
@@ -106,16 +122,38 @@ struct MomentViewerView: View {
         }
     }
 
-    // MARK: - Playback driving
+    // MARK: - Touch handling
 
-    private func tapZone(_ action: @escaping () -> Void) -> some View {
-        Color.clear
-            .contentShape(Rectangle())
-            .onTapGesture(perform: action)
-            .onLongPressGesture(minimumDuration: 0.2, perform: {}) { pressing in
-                setPaused(pressing)
-            }
+    /// Touch down: start the hold timer. Pausing only kicks in after the
+    /// threshold, so a quick navigation tap never flickers the pause state.
+    private func touchBegan() {
+        guard pressStartDate == nil else { return }
+        pressStartDate = Date()
+        pauseTask?.cancel()
+        pauseTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(holdThreshold))
+            guard !Task.isCancelled, pressStartDate != nil else { return }
+            setPaused(true)
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        }
     }
+
+    /// Touch up: short touch navigates by screen half; a hold just resumes.
+    private func touchEnded(at location: CGPoint, width: CGFloat) {
+        pauseTask?.cancel()
+        let began = pressStartDate ?? Date()
+        pressStartDate = nil
+        let held = Date().timeIntervalSince(began)
+
+        if isPaused || held >= holdThreshold {
+            setPaused(false)
+        } else {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            step(location.x < width / 2 ? -1 : 1)
+        }
+    }
+
+    // MARK: - Playback driving
 
     private func tick() {
         guard !isPaused else { return }

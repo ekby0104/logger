@@ -219,13 +219,9 @@ struct MomentViewerView: View {
             }
             .padding(.bottom, 4)
 
-            Text(moment.title)
-                .font(.hl(24))
-                .foregroundStyle(.white)
-
             Text(moment.caption)
-                .font(.hlRegular(14))
-                .foregroundStyle(.white.opacity(0.9))
+                .font(.hl(17))
+                .foregroundStyle(.white)
                 .padding(.bottom, 10)
 
             HStack {

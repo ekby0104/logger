@@ -79,10 +79,13 @@ enum ReelComposer {
         let scale = renderSize.width / 390
         let margin = 20 * scale
 
+        let contentWidth = renderSize.width - margin * 2
+
         for segment in segments {
             let pillImage = ReelOverlayRenderer.pill(
                 "\(segment.moment.timeLabel) · \(segment.moment.placeName)",
                 fontSize: 13 * scale,
+                maxWidth: contentWidth,
                 ink: ink
             )
             let pillLayer = imageLayer(pillImage, origin: CGPoint(x: margin, y: margin))
@@ -91,11 +94,10 @@ enum ReelComposer {
 
             let caption = segment.moment.caption
             if !caption.isEmpty {
-                let captionImage = ReelOverlayRenderer.outlinedText(
+                let captionImage = ReelOverlayRenderer.captionBox(
                     caption,
-                    fontSize: 16 * scale,
-                    maxWidth: renderSize.width - margin * 2,
-                    alignment: .left,
+                    fontSize: 14 * scale,
+                    maxWidth: contentWidth,
                     ink: ink
                 )
                 let captionLayer = imageLayer(
@@ -112,11 +114,10 @@ enum ReelComposer {
             let display = trimmedBlog.count > 220
                 ? String(trimmedBlog.prefix(220)) + "…"
                 : trimmedBlog
-            let blogImage = ReelOverlayRenderer.outlinedText(
+            let blogImage = ReelOverlayRenderer.blogPanel(
                 display,
-                fontSize: 17 * scale,
-                maxWidth: renderSize.width * 0.8,
-                alignment: .center,
+                fontSize: 15 * scale,
+                maxWidth: renderSize.width * 0.84,
                 ink: ink
             )
             let blogLayer = imageLayer(
@@ -193,82 +194,156 @@ enum ReelComposer {
 // MARK: - App-styled overlay rendering
 
 /// Draws overlay images in the app's neo-brutal style:
-/// white pills with ink borders, and white Chalkboard text with an ink outline.
+/// white boxes with ink borders and ink text, plus a translucent ink
+/// panel with white text for the blog content.
 enum ReelOverlayRenderer {
-    static func pill(_ text: String, fontSize: CGFloat, ink: UIColor) -> UIImage {
-        let font = UIFont(name: "ChalkboardSE-Bold", size: fontSize)
-            ?? UIFont.boldSystemFont(ofSize: fontSize)
+    private static func font(_ size: CGFloat) -> UIFont {
+        UIFont(name: "ChalkboardSE-Bold", size: size)
+            ?? UIFont.boldSystemFont(ofSize: size)
+    }
+
+    private static func lineWidth(_ fontSize: CGFloat) -> CGFloat {
+        max(fontSize * 0.14, 2)
+    }
+
+    /// Single-line white pill (ink border, ink text). Shrinks the font and
+    /// finally truncates so it always fits within maxWidth.
+    static func pill(_ text: String, fontSize: CGFloat, maxWidth: CGFloat, ink: UIColor) -> UIImage {
+        func textWidth(_ string: String, _ size: CGFloat) -> CGFloat {
+            (string as NSString).size(withAttributes: [.font: font(size)]).width
+        }
+
+        var size = fontSize
+        var display = text
+        let padH = fontSize * 0.9
+        let minSize = fontSize * 0.6
+
+        while textWidth(display, size) + padH * 2 > maxWidth && size > minSize {
+            size *= 0.93
+        }
+        if textWidth(display, size) + padH * 2 > maxWidth {
+            while display.count > 4,
+                  textWidth(display + "…", size) + padH * 2 > maxWidth {
+                display = String(display.dropLast())
+            }
+            display += "…"
+        }
+
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: font,
+            .font: font(size),
             .foregroundColor: ink
         ]
-        let textSize = (text as NSString).size(withAttributes: attributes)
-        let padH = fontSize * 0.9
-        let padV = fontSize * 0.45
-        let borderWidth = max(fontSize * 0.14, 2)
-        let size = CGSize(
+        let textSize = (display as NSString).size(withAttributes: attributes)
+        let padV = size * 0.5
+        let border = lineWidth(fontSize)
+        let imageSize = CGSize(
             width: ceil(textSize.width) + padH * 2,
             height: ceil(textSize.height) + padV * 2
         )
 
-        let renderer = UIGraphicsImageRenderer(size: size)
+        let renderer = UIGraphicsImageRenderer(size: imageSize)
         return renderer.image { _ in
-            let rect = CGRect(origin: .zero, size: size)
-                .insetBy(dx: borderWidth / 2 + 1, dy: borderWidth / 2 + 1)
+            let rect = CGRect(origin: .zero, size: imageSize)
+                .insetBy(dx: border / 2 + 1, dy: border / 2 + 1)
             let path = UIBezierPath(roundedRect: rect, cornerRadius: rect.height / 2)
             UIColor.white.setFill()
             path.fill()
             ink.setStroke()
-            path.lineWidth = borderWidth
+            path.lineWidth = border
             path.stroke()
-            (text as NSString).draw(
+            (display as NSString).draw(
                 at: CGPoint(x: padH, y: padV),
                 withAttributes: attributes
             )
         }
     }
 
-    static func outlinedText(
-        _ text: String,
-        fontSize: CGFloat,
-        maxWidth: CGFloat,
-        alignment: NSTextAlignment,
-        ink: UIColor
-    ) -> UIImage {
-        let font = UIFont(name: "ChalkboardSE-Bold", size: fontSize)
-            ?? UIFont.boldSystemFont(ofSize: fontSize)
+    /// Multiline white rounded box (ink border, ink text) — same look as the
+    /// info rows in the Edit screen. Text wraps within maxWidth.
+    static func captionBox(_ text: String, fontSize: CGFloat, maxWidth: CGFloat, ink: UIColor) -> UIImage {
         let paragraph = NSMutableParagraphStyle()
-        paragraph.alignment = alignment
-        paragraph.lineSpacing = fontSize * 0.3
-
-        let shadow = NSShadow()
-        shadow.shadowColor = ink
-        shadow.shadowOffset = CGSize(width: fontSize * 0.12, height: fontSize * 0.12)
-        shadow.shadowBlurRadius = 0
+        paragraph.alignment = .left
+        paragraph.lineSpacing = fontSize * 0.2
 
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .foregroundColor: UIColor.white,
-            .strokeColor: ink,
-            .strokeWidth: -3.5,
-            .paragraphStyle: paragraph,
-            .shadow: shadow
+            .font: font(fontSize),
+            .foregroundColor: ink,
+            .paragraphStyle: paragraph
         ]
+        let padding = fontSize * 0.7
+        let border = lineWidth(fontSize)
+        let textMaxWidth = maxWidth - padding * 2
         let bounding = (text as NSString).boundingRect(
-            with: CGSize(width: maxWidth, height: .greatestFiniteMagnitude),
+            with: CGSize(width: textMaxWidth, height: .greatestFiniteMagnitude),
             options: [.usesLineFragmentOrigin],
             attributes: attributes,
             context: nil
         )
-        let size = CGSize(
-            width: ceil(bounding.width) + fontSize * 0.3,
-            height: ceil(bounding.height) + fontSize * 0.3
+        let textSize = CGSize(width: ceil(bounding.width), height: ceil(bounding.height))
+        let imageSize = CGSize(
+            width: textSize.width + padding * 2,
+            height: textSize.height + padding * 2
         )
 
-        let renderer = UIGraphicsImageRenderer(size: size)
+        let renderer = UIGraphicsImageRenderer(size: imageSize)
         return renderer.image { _ in
+            let rect = CGRect(origin: .zero, size: imageSize)
+                .insetBy(dx: border / 2 + 1, dy: border / 2 + 1)
+            let path = UIBezierPath(roundedRect: rect, cornerRadius: fontSize * 0.8)
+            UIColor.white.setFill()
+            path.fill()
+            ink.setStroke()
+            path.lineWidth = border
+            path.stroke()
             (text as NSString).draw(
-                with: CGRect(origin: .zero, size: size),
+                with: CGRect(origin: CGPoint(x: padding, y: padding), size: textSize),
+                options: [.usesLineFragmentOrigin],
+                attributes: attributes,
+                context: nil
+            )
+        }
+    }
+
+    /// Centered blog text on a translucent ink panel with a white border —
+    /// readable over any footage without fully hiding it (same style as the
+    /// camera screen's timer pill).
+    static func blogPanel(_ text: String, fontSize: CGFloat, maxWidth: CGFloat, ink: UIColor) -> UIImage {
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+        paragraph.lineSpacing = fontSize * 0.3
+
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font(fontSize),
+            .foregroundColor: UIColor.white,
+            .paragraphStyle: paragraph
+        ]
+        let padding = fontSize * 0.9
+        let border = lineWidth(fontSize)
+        let textMaxWidth = maxWidth - padding * 2
+        let bounding = (text as NSString).boundingRect(
+            with: CGSize(width: textMaxWidth, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin],
+            attributes: attributes,
+            context: nil
+        )
+        let textSize = CGSize(width: ceil(bounding.width), height: ceil(bounding.height))
+        let imageSize = CGSize(
+            width: textSize.width + padding * 2,
+            height: textSize.height + padding * 2
+        )
+
+        let renderer = UIGraphicsImageRenderer(size: imageSize)
+        return renderer.image { _ in
+            let rect = CGRect(origin: .zero, size: imageSize)
+                .insetBy(dx: border / 2 + 1, dy: border / 2 + 1)
+            let path = UIBezierPath(roundedRect: rect, cornerRadius: fontSize)
+            ink.withAlphaComponent(0.55).setFill()
+            path.fill()
+            UIColor.white.setStroke()
+            path.lineWidth = border
+            path.stroke()
+            (text as NSString).draw(
+                with: CGRect(origin: CGPoint(x: padding, y: padding), size: textSize),
                 options: [.usesLineFragmentOrigin],
                 attributes: attributes,
                 context: nil

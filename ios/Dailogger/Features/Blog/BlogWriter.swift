@@ -40,7 +40,7 @@ enum BlogWriter {
         var lines: [String] = []
         lines.append(String(localized: "\(dayName). I captured \(sorted.count) little moments today, and looking back, the day felt mostly \(moodName)."))
         for moment in sorted {
-            lines.append(String(localized: "At \(moment.timeLabel), \"\(moment.title)\" at \(moment.placeName) — \(moment.caption)"))
+            lines.append(String(localized: "At \(moment.timeLabel) · \(moment.placeName) — \(moment.caption)"))
         }
         lines.append(String(localized: "That was my day — \(sorted.count) clips of ordinary life worth keeping."))
 
@@ -79,7 +79,7 @@ extension BlogWriter {
         let momentLines = moments
             .sorted { $0.createdAt < $1.createdAt }
             .map {
-                "- \($0.timeLabel) | \($0.title) | mood: \($0.mood.rawValue) | " +
+                "- \($0.timeLabel) | mood: \($0.mood.rawValue) | " +
                 "place: \($0.placeName) | note: \($0.caption)"
             }
             .joined(separator: "\n")

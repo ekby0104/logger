@@ -128,10 +128,11 @@ struct MomentRow: View {
                             .foregroundStyle(HL.gray)
                         MoodPill(mood: moment.mood)
                     }
-                    Text(moment.title)
-                        .font(.hl(16))
+                    Text(moment.caption)
+                        .font(.hl(15))
                         .foregroundStyle(HL.ink)
-                        .lineLimit(1)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
                     HStack(spacing: 4) {
                         Image(systemName: "mappin.and.ellipse")
                             .font(.system(size: 11, weight: .bold))

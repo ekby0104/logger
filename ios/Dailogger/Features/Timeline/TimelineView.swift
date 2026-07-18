@@ -109,19 +109,14 @@ private struct TimelineEntry: View {
                         .padding(10)
                     }
 
-                VStack(alignment: .leading, spacing: 5) {
-                    HStack(spacing: 8) {
-                        Text(moment.title)
-                            .font(.hl(16))
-                            .foregroundStyle(HL.ink)
-                            .lineLimit(1)
-                        Spacer(minLength: 0)
-                        MoodPill(mood: moment.mood)
-                    }
+                HStack(alignment: .top, spacing: 8) {
                     Text(moment.caption)
-                        .font(.hlRegular(13))
-                        .foregroundStyle(HL.gray)
+                        .font(.hl(15))
+                        .foregroundStyle(HL.ink)
+                        .lineLimit(3)
                         .multilineTextAlignment(.leading)
+                    Spacer(minLength: 0)
+                    MoodPill(mood: moment.mood)
                 }
                 .padding(EdgeInsets(top: 12, leading: 14, bottom: 14, trailing: 14))
             }

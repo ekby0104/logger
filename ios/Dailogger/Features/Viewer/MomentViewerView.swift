@@ -79,8 +79,20 @@ struct MomentViewerView: View {
                     onMockFinished: { step(1) }
                 )
 
-                HStack {
-                    Spacer()
+                // Same layout as the reel overlays: time·place pill and
+                // caption box stacked at the top-left.
+                HStack(alignment: .top, spacing: 12) {
+                    if let moment = current {
+                        VStack(alignment: .leading, spacing: 10) {
+                            metaPill(moment)
+                            if !moment.caption.isEmpty {
+                                captionBox(moment.caption)
+                            }
+                        }
+                    }
+
+                    Spacer(minLength: 12)
+
                     Button {
                         model.closeViewer()
                     } label: {
@@ -101,8 +113,11 @@ struct MomentViewerView: View {
 
                 Spacer()
 
-                if let moment = current {
-                    info(moment)
+                if current != nil {
+                    HStack {
+                        Spacer()
+                        editButton
+                    }
                 }
             }
             .padding(.horizontal, 20)
@@ -199,62 +214,55 @@ struct MomentViewerView: View {
         model.viewerMoment = moments[next]
     }
 
-    // MARK: - UI pieces
+    // MARK: - UI pieces (matching the reel overlay style)
 
-    private func info(_ moment: Moment) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                Text(moment.timeLabel)
-                    .font(.hl(13))
-                    .foregroundStyle(.white)
-                Text(moment.mood.displayName)
-                    .font(.hl(12))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 2)
-                    .background {
-                        Capsule().fill(HL.purple)
-                        Capsule().strokeBorder(.white, lineWidth: 2)
-                    }
+    private func metaPill(_ moment: Moment) -> some View {
+        Text("\(moment.timeLabel) · \(moment.placeName)")
+            .font(.hl(13))
+            .foregroundStyle(HL.ink)
+            .lineLimit(1)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background {
+                Capsule().fill(.white)
+                Capsule().strokeBorder(HL.ink, lineWidth: 2)
             }
-            .padding(.bottom, 4)
+    }
 
-            Text(moment.caption)
-                .font(.hl(17))
-                .foregroundStyle(.white)
-                .padding(.bottom, 10)
+    private func captionBox(_ text: String) -> some View {
+        Text(text)
+            .font(.hl(14))
+            .foregroundStyle(HL.ink)
+            .multilineTextAlignment(.leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(.white)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(HL.ink, lineWidth: 2)
+            }
+    }
 
-            HStack {
-                HStack(spacing: 5) {
-                    Image(systemName: "mappin.and.ellipse")
-                        .font(.system(size: 12, weight: .bold))
-                    Text(moment.placeName)
-                        .font(.hl(13))
-                }
-                .foregroundStyle(.white)
-
-                Spacer()
-
-                Button {
-                    model.editFromViewer()
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 13, weight: .bold))
-                        Text("Edit")
-                            .font(.hl(14))
-                    }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 16)
-                    .frame(height: 40)
-                    .background {
-                        Capsule().fill(HL.ink.opacity(0.5))
-                        Capsule().strokeBorder(.white, lineWidth: 2)
-                    }
-                }
-                .buttonStyle(.plain)
+    private var editButton: some View {
+        Button {
+            model.editFromViewer()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "pencil")
+                    .font(.system(size: 13, weight: .bold))
+                Text("Edit")
+                    .font(.hl(14))
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 16)
+            .frame(height: 40)
+            .background {
+                Capsule().fill(HL.ink.opacity(0.5))
+                Capsule().strokeBorder(.white, lineWidth: 2)
             }
         }
+        .buttonStyle(.plain)
     }
 }
 

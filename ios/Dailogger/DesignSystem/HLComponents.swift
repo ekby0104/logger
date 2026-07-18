@@ -118,21 +118,6 @@ struct EmptyMomentsCard: View {
 
 // MARK: - Pills & badges
 
-struct MoodPill: View {
-    let mood: Mood
-
-    var body: some View {
-        Text(mood.displayName)
-            .font(.hl(11))
-            .foregroundStyle(HL.purple)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 2)
-            .overlay {
-                Capsule().strokeBorder(HL.purple, lineWidth: 1.5)
-            }
-    }
-}
-
 struct StreakPill: View {
     let days: Int
 

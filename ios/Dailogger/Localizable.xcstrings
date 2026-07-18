@@ -184,17 +184,14 @@
     "— Dailogger, %@" : {
       "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "— 데이로거, %@" } } }
     },
-    "%@. I captured %lld little moments today, and looking back, the day felt mostly %@." : {
-      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "%@. 오늘은 %lld개의 작은 순간을 담았고, 돌아보니 대체로 %@한 하루였어요." } } }
+    "%@. I captured %lld little moments today." : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "%@. 오늘은 %lld개의 작은 순간을 담았어요." } } }
     },
     "At %@ · %@ — %@" : {
       "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "%@ · %@ — %@" } } }
     },
     "That was my day — %lld clips of ordinary life worth keeping." : {
       "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "이렇게 하루 끝 — 간직할 만한 일상 클립 %lld개." } } }
-    },
-    "%@ — a %@ day" : {
-      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "%@ — %@한 하루" } } }
     },
     "Delete" : {
       "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "삭제" } } }

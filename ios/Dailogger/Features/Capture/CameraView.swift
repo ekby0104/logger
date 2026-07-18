@@ -165,15 +165,6 @@ struct CameraView: View {
 
     private var bottomControls: some View {
         VStack(spacing: 18) {
-            ScrollView(.horizontal) {
-                HStack(spacing: 8) {
-                    ForEach(Mood.allCases, id: \.self) { mood in
-                        moodChip(mood)
-                    }
-                }
-            }
-            .scrollIndicators(.hidden)
-
             HStack {
                 Image(systemName: "photo.on.rectangle")
                     .font(.system(size: 19, weight: .semibold))
@@ -250,24 +241,6 @@ struct CameraView: View {
                             enabled ? Color.white : .white.opacity(0.6),
                             lineWidth: 2
                         )
-                }
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func moodChip(_ mood: Mood) -> some View {
-        let selected = mood == model.draftMood
-        return Button {
-            model.draftMood = mood
-        } label: {
-            Text(mood.displayName)
-                .font(.hl(14))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 16)
-                .frame(height: 36)
-                .background {
-                    Capsule().fill(selected ? HL.purple : HL.ink.opacity(0.45))
-                    Capsule().strokeBorder(.white, lineWidth: 2)
                 }
         }
         .buttonStyle(.plain)

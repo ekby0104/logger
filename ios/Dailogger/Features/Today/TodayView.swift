@@ -122,12 +122,9 @@ struct MomentRow: View {
                     }
 
                 VStack(alignment: .leading, spacing: 5) {
-                    HStack(spacing: 6) {
-                        Text(moment.timeLabel)
-                            .font(.hl(12))
-                            .foregroundStyle(HL.gray)
-                        MoodPill(mood: moment.mood)
-                    }
+                    Text(moment.timeLabel)
+                        .font(.hl(12))
+                        .foregroundStyle(HL.gray)
                     Text(moment.caption)
                         .font(.hl(15))
                         .foregroundStyle(HL.ink)

@@ -33,19 +33,16 @@ enum BlogWriter {
         let dayName = date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
 
         let sorted = moments.sorted { $0.createdAt < $1.createdAt }
-        let moodCounts = Dictionary(grouping: sorted, by: { $0.mood }).mapValues(\.count)
-        let topMood = moodCounts.max { $0.value < $1.value }?.key ?? .calm
-        let moodName = topMood.displayName.lowercased()
 
         var lines: [String] = []
-        lines.append(String(localized: "\(dayName). I captured \(sorted.count) little moments today, and looking back, the day felt mostly \(moodName)."))
+        lines.append(String(localized: "\(dayName). I captured \(sorted.count) little moments today."))
         for moment in sorted {
             lines.append(String(localized: "At \(moment.timeLabel) · \(moment.placeName) — \(moment.caption)"))
         }
         lines.append(String(localized: "That was my day — \(sorted.count) clips of ordinary life worth keeping."))
 
         return BlogResult(
-            title: String(localized: "\(dayName) — a \(moodName) day"),
+            title: dayName,
             body: lines.joined(separator: "\n\n"),
             isAIGenerated: false
         )
@@ -78,10 +75,7 @@ extension BlogWriter {
 
         let momentLines = moments
             .sorted { $0.createdAt < $1.createdAt }
-            .map {
-                "- \($0.timeLabel) | mood: \($0.mood.rawValue) | " +
-                "place: \($0.placeName) | note: \($0.caption)"
-            }
+            .map { "- \($0.timeLabel) | place: \($0.placeName) | note: \($0.caption)" }
             .joined(separator: "\n")
 
         let wantsKorean = Locale.preferredLanguages.first?.hasPrefix("ko") ?? false

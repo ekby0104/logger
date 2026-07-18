@@ -2,18 +2,31 @@ import AVFoundation
 import CoreMedia
 import UIKit
 
-/// Composes the day's clips into a single reel styled like the Timeline tab:
-/// the video plays inside a white ink-bordered card with a hard shadow on a
-/// paper background, next to a dashed timeline rail with a purple dot.
-/// Each moment's segment shows its time label and caption; the blog text
-/// floats over the media on a translucent ink panel.
+/// Reel visual style.
+enum ReelStyle {
+    /// Video inside a white ink-bordered card on paper, with the dashed
+    /// timeline rail, purple dot, time label, and card-footer caption.
+    case timeline
+    /// Full-bleed video with the time·place pill and caption box stacked
+    /// at the top-left (social-platform safe zone).
+    case fullscreen
+}
+
+/// Composes the day's clips into a single reel in the chosen style.
+/// Both styles keep the blog text on a translucent ink panel over the media.
 enum ReelComposer {
     private static let ink = UIColor(red: 0x13 / 255, green: 0x18 / 255, blue: 0x26 / 255, alpha: 1)
     private static let paper = UIColor(red: 0xF4 / 255, green: 0xF5 / 255, blue: 0xF7 / 255, alpha: 1)
     private static let gray = UIColor(red: 0x4F / 255, green: 0x56 / 255, blue: 0x63 / 255, alpha: 1)
     private static let purple = UIColor(red: 0xA8 / 255, green: 0x55 / 255, blue: 0xF7 / 255, alpha: 1)
 
-    static func makeReel(moments: [Moment], blogText: String) async throws -> URL {
+    private struct Segment {
+        let moment: Moment
+        let start: CMTime
+        let duration: CMTime
+    }
+
+    static func makeReel(moments: [Moment], blogText: String, style: ReelStyle) async throws -> URL {
         let clips: [(moment: Moment, url: URL)] = moments.compactMap { moment in
             guard let url = moment.videoURL else { return nil }
             return (moment, url)
@@ -29,7 +42,7 @@ enum ReelComposer {
         )
 
         var cursor = CMTime.zero
-        var segments: [(moment: Moment, start: CMTime, duration: CMTime)] = []
+        var segments: [Segment] = []
         var sourceTransform = CGAffineTransform.identity
         var sourceSize = CGSize(width: 1080, height: 1920)
         var isFirst = true
@@ -49,7 +62,7 @@ enum ReelComposer {
             if let track = try await asset.loadTracks(withMediaType: .audio).first {
                 try? audioTrack?.insertTimeRange(range, of: track, at: cursor)
             }
-            segments.append((clip.moment, cursor, duration))
+            segments.append(Segment(moment: clip.moment, start: cursor, duration: duration))
             cursor = cursor + duration
         }
 
@@ -73,8 +86,47 @@ enum ReelComposer {
         instruction.layerInstructions = [layerInstruction]
         videoComposition.instructions = [instruction]
 
-        // ----- Timeline-card layout (computed top-down, converted to CA's
-        // bottom-left origin via flipY) -----
+        let layers: (parent: CALayer, video: CALayer)
+        switch style {
+        case .timeline:
+            layers = timelineLayers(
+                segments: segments, renderSize: renderSize,
+                totalSeconds: totalSeconds, blogText: blogText
+            )
+        case .fullscreen:
+            layers = fullscreenLayers(
+                segments: segments, renderSize: renderSize,
+                totalSeconds: totalSeconds, blogText: blogText
+            )
+        }
+
+        videoComposition.animationTool = AVVideoCompositionCoreAnimationTool(
+            postProcessingAsVideoLayer: layers.video, in: layers.parent
+        )
+
+        let outputURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("reel-\(UUID().uuidString).mov")
+        guard let export = AVAssetExportSession(
+            asset: composition, presetName: AVAssetExportPresetHighestQuality
+        ) else { throw VideoComposerError.exportFailed }
+        export.outputURL = outputURL
+        export.outputFileType = .mov
+        export.videoComposition = videoComposition
+        await export.export()
+        guard export.status == .completed else {
+            throw export.error ?? VideoComposerError.exportFailed
+        }
+        return outputURL
+    }
+
+    // MARK: - Timeline-card style
+
+    private static func timelineLayers(
+        segments: [Segment],
+        renderSize: CGSize,
+        totalSeconds: Double,
+        blogText: String
+    ) -> (parent: CALayer, video: CALayer) {
         let W = renderSize.width
         let H = renderSize.height
         let scale = W / 390
@@ -160,7 +212,7 @@ enum ReelComposer {
                 segment.moment.timeLabel,
                 fontSize: 12 * scale,
                 color: gray,
-                maxWidth: cardX
+                maxWidth: cardMinX
             )
             let timeLayer = imageLayer(
                 timeImage,
@@ -212,23 +264,88 @@ enum ReelComposer {
             ))
         }
 
-        videoComposition.animationTool = AVVideoCompositionCoreAnimationTool(
-            postProcessingAsVideoLayer: videoLayer, in: parentLayer
-        )
+        return (parentLayer, videoLayer)
+    }
 
-        let outputURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("reel-\(UUID().uuidString).mov")
-        guard let export = AVAssetExportSession(
-            asset: composition, presetName: AVAssetExportPresetHighestQuality
-        ) else { throw VideoComposerError.exportFailed }
-        export.outputURL = outputURL
-        export.outputFileType = .mov
-        export.videoComposition = videoComposition
-        await export.export()
-        guard export.status == .completed else {
-            throw export.error ?? VideoComposerError.exportFailed
+    // MARK: - Fullscreen style
+
+    private static func fullscreenLayers(
+        segments: [Segment],
+        renderSize: CGSize,
+        totalSeconds: Double,
+        blogText: String
+    ) -> (parent: CALayer, video: CALayer) {
+        let W = renderSize.width
+        let H = renderSize.height
+        let scale = W / 390
+        func flipY(_ topY: CGFloat, _ height: CGFloat) -> CGFloat { H - topY - height }
+
+        let margin = 20 * scale
+        let contentWidth = W - margin * 2
+        // Social platforms overlay their own UI on the bottom ~25% and top
+        // ~10% of vertical video; overlays sit just below the top margin.
+        let topSafeMargin = H * 0.12
+
+        let parentLayer = CALayer()
+        let videoLayer = CALayer()
+        parentLayer.frame = CGRect(origin: .zero, size: renderSize)
+        videoLayer.frame = parentLayer.frame
+        parentLayer.addSublayer(videoLayer)
+
+        for segment in segments {
+            let pillImage = ReelOverlayRenderer.pill(
+                "\(segment.moment.timeLabel) · \(segment.moment.placeName)",
+                fontSize: 13 * scale,
+                maxWidth: contentWidth,
+                ink: ink
+            )
+            let pillTop = topSafeMargin
+            let pillLayer = imageLayer(
+                pillImage,
+                origin: CGPoint(x: margin, y: flipY(pillTop, pillImage.size.height))
+            )
+            setVisibility(pillLayer, start: segment.start, duration: segment.duration, totalSeconds: totalSeconds)
+            parentLayer.addSublayer(pillLayer)
+
+            let caption = truncated(segment.moment.caption, limit: 110)
+            if !caption.isEmpty {
+                let captionImage = ReelOverlayRenderer.captionBox(
+                    caption,
+                    fontSize: 14 * scale,
+                    maxWidth: contentWidth,
+                    ink: ink
+                )
+                let captionTop = pillTop + pillImage.size.height + 10 * scale
+                let captionLayer = imageLayer(
+                    captionImage,
+                    origin: CGPoint(x: margin, y: flipY(captionTop, captionImage.size.height))
+                )
+                setVisibility(captionLayer, start: segment.start, duration: segment.duration, totalSeconds: totalSeconds)
+                parentLayer.addSublayer(captionLayer)
+            }
         }
-        return outputURL
+
+        let trimmedBlog = blogText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedBlog.isEmpty {
+            let display = truncated(trimmedBlog, limit: 220)
+            // Slightly narrower than the frame so platform side buttons
+            // (likes/comments on the right edge) don't cover the text.
+            let blogImage = ReelOverlayRenderer.blogPanel(
+                display,
+                fontSize: 15 * scale,
+                maxWidth: W * 0.78,
+                ink: ink
+            )
+            parentLayer.addSublayer(imageLayer(
+                blogImage,
+                origin: CGPoint(
+                    x: (W - blogImage.size.width) / 2,
+                    y: (H - blogImage.size.height) / 2
+                )
+            ))
+        }
+
+        return (parentLayer, videoLayer)
     }
 
     // MARK: - Helpers
@@ -281,12 +398,17 @@ enum ReelComposer {
 
 // MARK: - App-styled overlay rendering
 
-/// Draws the timeline-styled overlay images: paper-and-ink cards, dashed
-/// rail, purple dot, plain Chalkboard text, and the translucent blog panel.
+/// Draws overlay images shared by both reel styles: paper-and-ink cards,
+/// dashed rail, purple dot, plain text, white pills/boxes, and the
+/// translucent blog panel.
 enum ReelOverlayRenderer {
     private static func font(_ size: CGFloat) -> UIFont {
         UIFont(name: "ChalkboardSE-Bold", size: size)
             ?? UIFont.boldSystemFont(ofSize: size)
+    }
+
+    private static func lineWidth(_ fontSize: CGFloat) -> CGFloat {
+        max(fontSize * 0.14, 2)
     }
 
     /// White rounded card with ink border and hard offset shadow.
@@ -386,6 +508,104 @@ enum ReelOverlayRenderer {
         }
     }
 
+    /// Single-line white pill (ink border, ink text). Shrinks the font and
+    /// finally truncates so it always fits within maxWidth.
+    static func pill(_ text: String, fontSize: CGFloat, maxWidth: CGFloat, ink: UIColor) -> UIImage {
+        func textWidth(_ string: String, _ size: CGFloat) -> CGFloat {
+            (string as NSString).size(withAttributes: [.font: font(size)]).width
+        }
+
+        var size = fontSize
+        var display = text
+        let padH = fontSize * 0.9
+        let minSize = fontSize * 0.6
+
+        while textWidth(display, size) + padH * 2 > maxWidth && size > minSize {
+            size *= 0.93
+        }
+        if textWidth(display, size) + padH * 2 > maxWidth {
+            while display.count > 4,
+                  textWidth(display + "…", size) + padH * 2 > maxWidth {
+                display = String(display.dropLast())
+            }
+            display += "…"
+        }
+
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font(size),
+            .foregroundColor: ink
+        ]
+        let textSize = (display as NSString).size(withAttributes: attributes)
+        let padV = size * 0.5
+        let border = lineWidth(fontSize)
+        let imageSize = CGSize(
+            width: ceil(textSize.width) + padH * 2,
+            height: ceil(textSize.height) + padV * 2
+        )
+
+        let renderer = UIGraphicsImageRenderer(size: imageSize)
+        return renderer.image { _ in
+            let rect = CGRect(origin: .zero, size: imageSize)
+                .insetBy(dx: border / 2 + 1, dy: border / 2 + 1)
+            let path = UIBezierPath(roundedRect: rect, cornerRadius: rect.height / 2)
+            UIColor.white.setFill()
+            path.fill()
+            ink.setStroke()
+            path.lineWidth = border
+            path.stroke()
+            (display as NSString).draw(
+                at: CGPoint(x: padH, y: padV),
+                withAttributes: attributes
+            )
+        }
+    }
+
+    /// Multiline white rounded box (ink border, ink text). Text wraps within
+    /// maxWidth.
+    static func captionBox(_ text: String, fontSize: CGFloat, maxWidth: CGFloat, ink: UIColor) -> UIImage {
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .left
+        paragraph.lineSpacing = fontSize * 0.2
+
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font(fontSize),
+            .foregroundColor: ink,
+            .paragraphStyle: paragraph
+        ]
+        let padding = fontSize * 0.7
+        let border = lineWidth(fontSize)
+        let textMaxWidth = maxWidth - padding * 2
+        let bounding = (text as NSString).boundingRect(
+            with: CGSize(width: textMaxWidth, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin],
+            attributes: attributes,
+            context: nil
+        )
+        let textSize = CGSize(width: ceil(bounding.width), height: ceil(bounding.height))
+        let imageSize = CGSize(
+            width: textSize.width + padding * 2,
+            height: textSize.height + padding * 2
+        )
+
+        let renderer = UIGraphicsImageRenderer(size: imageSize)
+        return renderer.image { _ in
+            let rect = CGRect(origin: .zero, size: imageSize)
+                .insetBy(dx: border / 2 + 1, dy: border / 2 + 1)
+            let path = UIBezierPath(roundedRect: rect, cornerRadius: fontSize * 0.8)
+            UIColor.white.setFill()
+            path.fill()
+            ink.setStroke()
+            path.lineWidth = border
+            path.stroke()
+            (text as NSString).draw(
+                with: CGRect(origin: CGPoint(x: padding, y: padding), size: textSize),
+                options: [.usesLineFragmentOrigin],
+                attributes: attributes,
+                context: nil
+            )
+        }
+    }
+
     /// Centered blog text on a translucent ink panel with a white border —
     /// readable over the footage without fully hiding it.
     static func blogPanel(_ text: String, fontSize: CGFloat, maxWidth: CGFloat, ink: UIColor) -> UIImage {
@@ -399,7 +619,7 @@ enum ReelOverlayRenderer {
             .paragraphStyle: paragraph
         ]
         let padding = fontSize * 0.9
-        let border = max(fontSize * 0.14, 2)
+        let border = lineWidth(fontSize)
         let textMaxWidth = maxWidth - padding * 2
         let bounding = (text as NSString).boundingRect(
             with: CGSize(width: textMaxWidth, height: .greatestFiniteMagnitude),

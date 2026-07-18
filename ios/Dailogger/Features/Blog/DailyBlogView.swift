@@ -223,15 +223,78 @@ private struct BlogReelSection: View {
         Group {
             if !clipURLs.isEmpty {
                 if let reelURL {
-                    HStack(spacing: 14) {
+                    VStack(spacing: 12) {
+                        HStack(spacing: 14) {
+                            Button {
+                                showPreview = true
+                            } label: {
+                                HStack(spacing: 7) {
+                                    Image(systemName: "play.fill")
+                                        .font(.system(size: 15, weight: .bold))
+                                    Text("Preview reel")
+                                        .font(.hl(15))
+                                }
+                                .foregroundStyle(HL.ink)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 50)
+                            }
+                            .buttonStyle(.plain)
+                            .hardCard(radius: 12, shadowOffset: 4)
+
+                            ShareLink(item: reelURL) {
+                                HStack(spacing: 7) {
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.system(size: 15, weight: .bold))
+                                    Text("Share")
+                                        .font(.hl(15))
+                                }
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 50)
+                            }
+                            .buttonStyle(.plain)
+                            .hardCard(fill: HL.purple, radius: 12, shadowOffset: 4)
+                        }
+
                         Button {
-                            showPreview = true
+                            self.reelURL = nil
+                        } label: {
+                            Text("Make another style")
+                                .font(.hl(13))
+                                .foregroundStyle(HL.purple)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 4)
+                    }
+                    .sheet(isPresented: $showPreview) {
+                        ReelPreviewSheet(url: reelURL)
+                    }
+                } else if isMakingReel {
+                    PrimaryButton(
+                        title: String(localized: "Making the reel…"),
+                        systemImage: "hourglass",
+                        height: 50
+                    ) {}
+                    .disabled(true)
+                    .opacity(0.7)
+                } else {
+                    VStack(spacing: 14) {
+                        PrimaryButton(
+                            title: String(localized: "Create timeline reel"),
+                            systemImage: "list.bullet.rectangle",
+                            height: 50
+                        ) {
+                            makeReel(style: .timeline)
+                        }
+
+                        Button {
+                            makeReel(style: .fullscreen)
                         } label: {
                             HStack(spacing: 7) {
-                                Image(systemName: "play.fill")
+                                Image(systemName: "rectangle.portrait.fill")
                                     .font(.system(size: 15, weight: .bold))
-                                Text("Preview reel")
-                                    .font(.hl(15))
+                                Text("Create full-size reel")
+                                    .font(.hl(16))
                             }
                             .foregroundStyle(HL.ink)
                             .frame(maxWidth: .infinity)
@@ -239,36 +302,7 @@ private struct BlogReelSection: View {
                         }
                         .buttonStyle(.plain)
                         .hardCard(radius: 12, shadowOffset: 4)
-
-                        ShareLink(item: reelURL) {
-                            HStack(spacing: 7) {
-                                Image(systemName: "square.and.arrow.up")
-                                    .font(.system(size: 15, weight: .bold))
-                                Text("Share")
-                                    .font(.hl(15))
-                            }
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                        }
-                        .buttonStyle(.plain)
-                        .hardCard(fill: HL.purple, radius: 12, shadowOffset: 4)
                     }
-                    .sheet(isPresented: $showPreview) {
-                        ReelPreviewSheet(url: reelURL)
-                    }
-                } else {
-                    PrimaryButton(
-                        title: isMakingReel
-                            ? String(localized: "Making the reel…")
-                            : String(localized: "Create reel video"),
-                        systemImage: isMakingReel ? "hourglass" : "film",
-                        height: 50
-                    ) {
-                        makeReel()
-                    }
-                    .disabled(isMakingReel)
-                    .opacity(isMakingReel ? 0.7 : 1)
                 }
             }
         }
@@ -276,14 +310,16 @@ private struct BlogReelSection: View {
         .onChange(of: blogText) { reelURL = nil }
     }
 
-    private func makeReel() {
+    private func makeReel(style: ReelStyle) {
         guard !isMakingReel else { return }
         isMakingReel = true
         let reelMoments = moments.filter { $0.videoURL != nil }
         let text = blogText
         Task { @MainActor in
             do {
-                reelURL = try await ReelComposer.makeReel(moments: reelMoments, blogText: text)
+                reelURL = try await ReelComposer.makeReel(
+                    moments: reelMoments, blogText: text, style: style
+                )
             } catch {
                 model.flashToast(String(localized: "Couldn't make the reel"))
             }

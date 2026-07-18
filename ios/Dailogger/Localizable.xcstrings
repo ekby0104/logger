@@ -262,6 +262,15 @@
     "Preview reel" : {
       "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "릴 미리보기" } } }
     },
+    "Create timeline reel" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "타임라인 릴 만들기" } } }
+    },
+    "Create full-size reel" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "풀사이즈 릴 만들기" } } }
+    },
+    "Make another style" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "다른 스타일로 다시 만들기" } } }
+    },
     "Share" : {
       "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "공유" } } }
     }

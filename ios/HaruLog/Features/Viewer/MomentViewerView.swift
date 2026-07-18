@@ -247,7 +247,7 @@ struct MomentViewerView: View {
                 Text(moment.timeLabel)
                     .font(.hl(13))
                     .foregroundStyle(.white)
-                Text(moment.mood.rawValue)
+                Text(moment.mood.displayName)
                     .font(.hl(12))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 10)

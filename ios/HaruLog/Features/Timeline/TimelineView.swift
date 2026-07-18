@@ -6,10 +6,7 @@ struct TimelineView: View {
     @Query(sort: \Moment.createdAt) private var moments: [Moment]
 
     private var dateLabel: String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
-        formatter.dateFormat = "EEE, MMM d"
-        return formatter.string(from: .now)
+        Date.now.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
     }
 
     var body: some View {

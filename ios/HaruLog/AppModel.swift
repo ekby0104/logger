@@ -147,7 +147,7 @@ final class AppModel {
 
     func goToEdit() {
         guard recordedSeconds > 0 else {
-            flashToast("Record a moment first")
+            flashToast(String(localized: "Record a moment first"))
             return
         }
         if isRecording {
@@ -177,7 +177,7 @@ final class AppModel {
                 self?.draftVideoTempURL = merged
                 self?.draftThumbnail = await VideoComposer.thumbnail(for: merged)
             } catch {
-                self?.flashToast("Couldn't process the clip")
+                self?.flashToast(String(localized: "Couldn't process the clip"))
             }
             self?.isMerging = false
         }
@@ -195,7 +195,7 @@ final class AppModel {
             resetCapture()
             viewerMoment = nil
             overlay = nil
-            flashToast("Moment updated")
+            flashToast(String(localized: "Moment updated"))
             return
         }
 
@@ -215,11 +215,15 @@ final class AppModel {
         let moment = Moment(
             id: id,
             createdAt: .now,
-            title: draftCaption.isEmpty ? "New moment" : String(draftCaption.prefix(14)),
-            caption: draftCaption.isEmpty ? "A moment just captured." : draftCaption,
+            title: draftCaption.isEmpty
+                ? String(localized: "New moment")
+                : String(draftCaption.prefix(14)),
+            caption: draftCaption.isEmpty
+                ? String(localized: "A moment just captured.")
+                : draftCaption,
             mood: draftMood,
             duration: TimeInterval(seconds),
-            placeName: currentPlaceName ?? "Somewhere today",
+            placeName: currentPlaceName ?? String(localized: "Somewhere today"),
             latitude: currentCoordinate?.latitude,
             longitude: currentCoordinate?.longitude,
             videoFileName: videoName,
@@ -231,12 +235,12 @@ final class AppModel {
         overlay = nil
         tab = .today
         UINotificationFeedbackGenerator().notificationOccurred(.success)
-        flashToast("Saved to your timeline")
+        flashToast(String(localized: "Saved to your timeline"))
     }
 
     func makeBlog(moments: [Moment], context: ModelContext) {
         guard !moments.isEmpty else {
-            flashToast("Record a moment first")
+            flashToast(String(localized: "Record a moment first"))
             return
         }
         guard !isWritingBlog else { return }
@@ -285,7 +289,7 @@ final class AppModel {
     /// Opens a saved blog from the archive (Calendar day / Me tab).
     func openBlog(_ log: DailyLog) {
         guard let title = log.blogTitle, let body = log.blogText else {
-            flashToast("No blog for this day yet")
+            flashToast(String(localized: "No blog for this day yet"))
             return
         }
         blogTitle = title

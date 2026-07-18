@@ -46,11 +46,9 @@ struct CameraView: View {
     }
 
     private var locationPillLabel: String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
-        formatter.dateFormat = "h:mm a"
-        let time = formatter.string(from: .now)
-        return "\(model.currentPlaceName ?? "Locating…") · \(time)"
+        let time = Date.now.formatted(date: .omitted, time: .shortened)
+        let place = model.currentPlaceName ?? String(localized: "Locating…")
+        return "\(place) · \(time)"
     }
 
     private var statusMessage: some View {
@@ -262,7 +260,7 @@ struct CameraView: View {
         return Button {
             model.draftMood = mood
         } label: {
-            Text(mood.rawValue)
+            Text(mood.displayName)
                 .font(.hl(14))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 16)

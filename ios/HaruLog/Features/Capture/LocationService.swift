@@ -42,7 +42,9 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
         geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, _ in
             let placemark = placemarks?.first
             let parts = [placemark?.subLocality, placemark?.locality].compactMap { $0 }
-            let name = parts.isEmpty ? "Somewhere nice" : parts.joined(separator: ", ")
+            let name = parts.isEmpty
+                ? String(localized: "Somewhere nice")
+                : parts.joined(separator: ", ")
             DispatchQueue.main.async {
                 self?.onPlaceResolved?(name, location.coordinate)
             }

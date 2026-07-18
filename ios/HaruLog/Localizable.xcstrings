@@ -1,0 +1,201 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Today" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "오늘" } } }
+    },
+    "Timeline" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "타임라인" } } }
+    },
+    "Calendar" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "캘린더" } } }
+    },
+    "Me" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "나" } } }
+    },
+    "Moments" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "모먼트" } } }
+    },
+    "Moments today" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "오늘의 모먼트" } } }
+    },
+    "Create daily blog" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "데일리 블로그 만들기" } } }
+    },
+    "Writing your day…" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "하루를 쓰는 중…" } } }
+    },
+    "Caption" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "캡션" } } }
+    },
+    "Mood" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "무드" } } }
+    },
+    "Location · Time" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "위치 · 시간" } } }
+    },
+    "Edit moment" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "모먼트 수정" } } }
+    },
+    "Save to timeline" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "타임라인에 저장" } } }
+    },
+    "Write a line about this moment" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "이 순간에 대해 한 줄 적어보세요" } } }
+    },
+    "Daily Blog" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "데일리 블로그" } } }
+    },
+    "On-device AI" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "온디바이스 AI" } } }
+    },
+    "Clips from this day" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "이날의 클립" } } }
+    },
+    "Past daily blogs" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "지난 데일리 블로그" } } }
+    },
+    "Streak" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "스트릭" } } }
+    },
+    "Blogs" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "블로그" } } }
+    },
+    "Read the blog" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "블로그 읽기" } } }
+    },
+    "No records" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "기록 없음" } } }
+    },
+    "Edit" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "수정" } } }
+    },
+    "Settings" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "설정" } } }
+    },
+    "Remove sample data" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "샘플 데이터 삭제" } } }
+    },
+    "Cancel" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "취소" } } }
+    },
+    "Removes the demo moments (no video) and past demo days. Your real recordings and blogs stay." : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "데모 모먼트(영상 없음)와 지난 데모 날짜를 삭제합니다. 실제 녹화와 블로그는 유지돼요." } } }
+    },
+    "Camera access is off" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "카메라 접근이 꺼져 있어요" } } }
+    },
+    "Allow camera access in Settings\nto record your moments." : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "순간을 녹화하려면 설정에서\n카메라 접근을 허용해 주세요." } } }
+    },
+    "Open Settings" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "설정 열기" } } }
+    },
+    "No camera on this device\n— recording is mocked" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "이 기기에는 카메라가 없어요\n— 녹화는 목업으로 동작해요" } } }
+    },
+    "Preparing camera…" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "카메라 준비 중…" } } }
+    },
+    "Locating…" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "위치 확인 중…" } } }
+    },
+    "Jiwoo's Days" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "지우의 하루" } } }
+    },
+    "Fresh" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "상쾌" } } }
+    },
+    "Calm" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "차분" } } }
+    },
+    "Happy" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "행복" } } }
+    },
+    "Peaceful" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "평온" } } }
+    },
+    "Moved" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "감동" } } }
+    },
+    "Proud" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "뿌듯" } } }
+    },
+    "Saved to your timeline" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "타임라인에 저장했어요" } } }
+    },
+    "Moment updated" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "모먼트를 수정했어요" } } }
+    },
+    "Record a moment first" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "먼저 순간을 녹화해 보세요" } } }
+    },
+    "Couldn't process the clip" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "클립을 처리하지 못했어요" } } }
+    },
+    "No blog for this day yet" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "이날의 블로그가 아직 없어요" } } }
+    },
+    "Sample data removed" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "샘플 데이터를 삭제했어요" } } }
+    },
+    "New moment" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "새로운 순간" } } }
+    },
+    "A moment just captured." : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "방금 담은 순간." } } }
+    },
+    "Somewhere today" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "오늘 어딘가" } } }
+    },
+    "Somewhere nice" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "어느 멋진 곳" } } }
+    },
+    "%lld days" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "%lld일" } } }
+    },
+    "clips · %@" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "클립 · %@" } } }
+    },
+    "%@ · %lld moments" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "%@ · 모먼트 %lld개" } } }
+    },
+    "You logged %lld days this month" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "이번 달 %lld일 기록했어요" } } }
+    },
+    "%lld clips · blog ready" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "클립 %lld개 · 블로그 완성" } } }
+    },
+    "%lld clips · no blog yet" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "클립 %lld개 · 블로그 없음" } } }
+    },
+    "%lld clips" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "클립 %lld개" } } }
+    },
+    "%lld total" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "총 %lld개" } } }
+    },
+    "%lld moments" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "모먼트 %lld개" } } }
+    },
+    "Today · %@" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "오늘 · %@" } } }
+    },
+    "— HaruLog, %@" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "— 하루로그, %@" } } }
+    },
+    "%@. I captured %lld little moments today, and looking back, the day felt mostly %@." : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "%@. 오늘은 %lld개의 작은 순간을 담았고, 돌아보니 대체로 %@한 하루였어요." } } }
+    },
+    "At %@, \"%@\" at %@ — %@" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "%1$@, %3$@에서 \"%2$@\" — %4$@" } } }
+    },
+    "That was my day — %lld clips of ordinary life worth keeping." : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "이렇게 하루 끝 — 간직할 만한 일상 클립 %lld개." } } }
+    },
+    "%@ — a %@ day" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "%@ — %@한 하루" } } }
+    }
+  },
+  "version" : "1.0"
+}

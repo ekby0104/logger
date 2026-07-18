@@ -30,29 +30,22 @@ enum BlogWriter {
     // MARK: - Template fallback
 
     private static func template(moments: [Moment], date: Date) -> BlogResult {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
-        formatter.dateFormat = "EEEE, MMM d"
-        let dayName = formatter.string(from: date)
+        let dayName = date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
 
         let sorted = moments.sorted { $0.createdAt < $1.createdAt }
         let moodCounts = Dictionary(grouping: sorted, by: { $0.mood }).mapValues(\.count)
         let topMood = moodCounts.max { $0.value < $1.value }?.key ?? .calm
+        let moodName = topMood.displayName.lowercased()
 
         var lines: [String] = []
-        lines.append(
-            "\(dayName). I captured \(sorted.count) little moments today, " +
-            "and looking back, the day felt mostly \(topMood.rawValue.lowercased())."
-        )
+        lines.append(String(localized: "\(dayName). I captured \(sorted.count) little moments today, and looking back, the day felt mostly \(moodName)."))
         for moment in sorted {
-            lines.append(
-                "At \(moment.timeLabel), \"\(moment.title)\" at \(moment.placeName) — \(moment.caption)"
-            )
+            lines.append(String(localized: "At \(moment.timeLabel), \"\(moment.title)\" at \(moment.placeName) — \(moment.caption)"))
         }
-        lines.append("That was my day — \(sorted.count) clips of ordinary life worth keeping.")
+        lines.append(String(localized: "That was my day — \(sorted.count) clips of ordinary life worth keeping."))
 
         return BlogResult(
-            title: "\(dayName) — a \(topMood.rawValue.lowercased()) day",
+            title: String(localized: "\(dayName) — a \(moodName) day"),
             body: lines.joined(separator: "\n\n"),
             isAIGenerated: false
         )
@@ -91,11 +84,16 @@ extension BlogWriter {
             }
             .joined(separator: "\n")
 
+        let wantsKorean = Locale.preferredLanguages.first?.hasPrefix("ko") ?? false
+        let languageRule = wantsKorean
+            ? "Write the diary in natural, warm Korean (일기체)."
+            : "Write the diary in English."
         let session = LanguageModelSession(
             instructions: """
             You turn a list of short video moments from someone's day into a warm, \
             first-person diary entry, as if they wrote it themselves at night. \
-            Write naturally and concretely. Never invent events that are not in the list.
+            Write naturally and concretely. Never invent events that are not in the list. \
+            \(languageRule)
             """
         )
         let prompt = """

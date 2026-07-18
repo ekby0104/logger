@@ -112,7 +112,7 @@ struct ProfileView: View {
             context.delete(log)
         }
         UserDefaults.standard.set(true, forKey: SeedData.samplesRemovedKey)
-        model.flashToast("Sample data removed")
+        model.flashToast(String(localized: "Sample data removed"))
     }
 
     private var statsCard: some View {
@@ -125,7 +125,7 @@ struct ProfileView: View {
         .hardCard(radius: 16)
     }
 
-    private func statItem(value: String, label: String) -> some View {
+    private func statItem(value: String, label: LocalizedStringKey) -> some View {
         VStack(spacing: 2) {
             Text(value)
                 .font(.hl(23))

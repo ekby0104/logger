@@ -8,6 +8,18 @@ enum Mood: String, CaseIterable, Codable, Hashable {
     case peaceful = "Peaceful"
     case moved = "Moved"
     case proud = "Proud"
+
+    /// Localized label for UI; rawValue stays English for storage and AI prompts.
+    var displayName: String {
+        switch self {
+        case .fresh: return String(localized: "Fresh")
+        case .calm: return String(localized: "Calm")
+        case .happy: return String(localized: "Happy")
+        case .peaceful: return String(localized: "Peaceful")
+        case .moved: return String(localized: "Moved")
+        case .proud: return String(localized: "Proud")
+        }
+    }
 }
 
 @Model

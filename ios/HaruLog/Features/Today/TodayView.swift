@@ -12,10 +12,7 @@ struct TodayView: View {
     }
 
     private var dateLabel: String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
-        formatter.dateFormat = "EEE, MMM d"
-        return formatter.string(from: .now)
+        Date.now.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
     }
 
     private var totalDurationLabel: String {
@@ -95,7 +92,9 @@ struct TodayView: View {
             .padding(.bottom, 16)
 
             PrimaryButton(
-                title: model.isWritingBlog ? "Writing your day…" : "Create daily blog",
+                title: model.isWritingBlog
+                    ? String(localized: "Writing your day…")
+                    : String(localized: "Create daily blog"),
                 systemImage: model.isWritingBlog ? "hourglass" : "sparkles"
             ) {
                 model.makeBlog(moments: moments, context: context)

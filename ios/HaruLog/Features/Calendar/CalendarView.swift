@@ -10,17 +10,15 @@ struct CalendarView: View {
     private var calendar: Calendar { Calendar.current }
 
     private var monthTitle: String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: .now)
+        Date.now.formatted(.dateTime.year().month(.wide))
     }
 
-    private var monthName: String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
-        formatter.dateFormat = "MMMM"
-        return formatter.string(from: .now)
+    private var selectedDate: Date {
+        let components = calendar.dateComponents([.year, .month], from: .now)
+        let dayComponents = DateComponents(
+            year: components.year, month: components.month, day: selectedDay
+        )
+        return calendar.date(from: dayComponents) ?? .now
     }
 
     private var daysInMonth: Int {
@@ -56,8 +54,8 @@ struct CalendarView: View {
                     .padding(.bottom, 20)
 
                 LazyVGrid(columns: columns, spacing: 2) {
-                    ForEach(Array("SMTWTFS".enumerated()), id: \.offset) { _, letter in
-                        Text(String(letter))
+                    ForEach(Array(calendar.veryShortWeekdaySymbols.enumerated()), id: \.offset) { _, symbol in
+                        Text(symbol)
                             .font(.hl(11))
                             .foregroundStyle(HL.gray)
                             .padding(.vertical, 4)
@@ -134,10 +132,10 @@ struct CalendarView: View {
         let meta: String
         if let log {
             meta = log.blogText != nil
-                ? "\(log.clipCount) clips · blog ready"
-                : "\(log.clipCount) clips · no blog yet"
+                ? String(localized: "\(log.clipCount) clips · blog ready")
+                : String(localized: "\(log.clipCount) clips · no blog yet")
         } else {
-            meta = "No records"
+            meta = String(localized: "No records")
         }
 
         return Button {
@@ -145,7 +143,7 @@ struct CalendarView: View {
         } label: {
             VStack(alignment: .leading, spacing: 13) {
                 HStack {
-                    Text("\(monthName) \(selectedDay)")
+                    Text(selectedDate.formatted(.dateTime.month(.wide).day()))
                         .font(.hl(17))
                         .foregroundStyle(HL.ink)
                     Spacer()

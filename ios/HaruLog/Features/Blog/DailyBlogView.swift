@@ -7,10 +7,7 @@ struct DailyBlogView: View {
     @Query(sort: \Moment.createdAt) private var moments: [Moment]
 
     private var dateLabel: String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
-        formatter.dateFormat = "EEEE, MMM d"
-        return formatter.string(from: model.blogDate)
+        model.blogDate.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
     }
 
     /// Clips recorded on the blog's day (empty for archived days without media).
@@ -20,7 +17,7 @@ struct DailyBlogView: View {
     }
 
     private var shareText: String {
-        "\(model.blogTitle)\n\n\(model.blogBody)\n\n— HaruLog, \(dateLabel)"
+        "\(model.blogTitle)\n\n\(model.blogBody)\n\n" + String(localized: "— HaruLog, \(dateLabel)")
     }
 
     var body: some View {

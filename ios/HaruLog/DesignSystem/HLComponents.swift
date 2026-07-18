@@ -88,7 +88,7 @@ struct MoodPill: View {
     let mood: Mood
 
     var body: some View {
-        Text(mood.rawValue)
+        Text(mood.displayName)
             .font(.hl(11))
             .foregroundStyle(HL.purple)
             .padding(.horizontal, 8)

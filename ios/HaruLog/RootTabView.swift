@@ -82,7 +82,7 @@ private struct TabBar: View {
         }
     }
 
-    private func tabButton(_ tab: AppModel.Tab, icon: String, label: String) -> some View {
+    private func tabButton(_ tab: AppModel.Tab, icon: String, label: LocalizedStringKey) -> some View {
         Button {
             model.tab = tab
         } label: {

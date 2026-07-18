@@ -21,14 +21,13 @@ struct EditMomentView: View {
     }
 
     private var timeLabel: String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
         if let editing = model.editingMoment {
-            formatter.dateFormat = "MMM d · h:mm a"
-            return formatter.string(from: editing.createdAt)
+            return editing.createdAt.formatted(
+                .dateTime.month(.abbreviated).day().hour().minute()
+            )
         }
-        formatter.dateFormat = "h:mm a"
-        return "Today · " + formatter.string(from: .now)
+        let time = Date.now.formatted(date: .omitted, time: .shortened)
+        return String(localized: "Today · \(time)")
     }
 
     var body: some View {
@@ -109,7 +108,7 @@ struct EditMomentView: View {
                     }
 
                     PrimaryButton(
-                        title: "Save to timeline",
+                        title: String(localized: "Save to timeline"),
                         systemImage: "checkmark",
                         height: 54
                     ) {
@@ -159,7 +158,7 @@ struct EditMomentView: View {
         }
     }
 
-    private func sectionLabel(_ text: String) -> some View {
+    private func sectionLabel(_ text: LocalizedStringKey) -> some View {
         Text(text)
             .font(.hl(14))
             .foregroundStyle(HL.ink)
@@ -171,7 +170,7 @@ struct EditMomentView: View {
         return Button {
             model.draftMood = mood
         } label: {
-            Text(mood.rawValue)
+            Text(mood.displayName)
                 .font(.hl(14))
                 .foregroundStyle(selected ? .white : HL.ink)
                 .padding(.horizontal, 16)

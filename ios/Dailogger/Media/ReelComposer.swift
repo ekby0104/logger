@@ -84,15 +84,16 @@ enum ReelComposer {
         let cardRadius = 16 * scale
         let shadowOffset = 6 * scale
         let lineX = 47 * scale
-        let cardX = 64 * scale
-        let captionStripH = 70 * scale
-        let topMargin = H * 0.12
-        let bottomMargin = H * 0.12
+        let cardMinX = 56 * scale
+        let rightMargin = 14 * scale
+        let captionStripH = 64 * scale
+        let topMargin = H * 0.08
+        let bottomMargin = H * 0.09
 
         // Media area keeps the source aspect so the video isn't distorted.
         let aspect = W / H
         let availH = H - topMargin - bottomMargin - captionStripH - border * 2
-        let availW = W - cardX - 18 * scale - border * 2
+        let availW = W - cardMinX - rightMargin - border * 2
         var mediaH = availH
         var mediaW = availH * aspect
         if mediaW > availW {
@@ -103,6 +104,9 @@ enum ReelComposer {
         let cardW = mediaW + border * 2
         let cardH = border + mediaH + captionStripH + border
         let cardTop = topMargin
+        // Center the card in the space right of the rail so leftover width
+        // splits evenly instead of piling up on the right edge.
+        let cardX = cardMinX + max(availW + border * 2 - cardW, 0) / 2
         let mediaX = cardX + border
         let mediaTop = cardTop + border
 

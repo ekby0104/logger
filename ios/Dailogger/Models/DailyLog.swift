@@ -16,9 +16,13 @@ final class DailyLog {
         self.isBlogReady = isBlogReady
     }
 
-    var dayLabel: String {
+    private static let dayFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "M/d"
-        return formatter.string(from: date)
+        return formatter
+    }()
+
+    var dayLabel: String {
+        Self.dayFormatter.string(from: date)
     }
 }

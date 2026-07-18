@@ -70,10 +70,15 @@ final class Moment {
         set { moodRaw = newValue.rawValue }
     }
 
-    var timeLabel: String {
+    // DateFormatter creation is expensive; reuse one per format.
+    private static let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
-        return formatter.string(from: createdAt)
+        return formatter
+    }()
+
+    var timeLabel: String {
+        Self.timeFormatter.string(from: createdAt)
     }
 
     var durationLabel: String {

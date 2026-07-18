@@ -209,6 +209,7 @@ final class AppModel {
             videoName = MediaStore.persistVideo(from: tempURL, id: id)
             if let thumbnail = draftThumbnail {
                 thumbnailName = MediaStore.persistThumbnail(thumbnail, id: id)
+                ThumbnailStore.store(thumbnail, for: thumbnailName)
             }
         }
 
@@ -241,6 +242,7 @@ final class AppModel {
     func deleteMoment(_ moment: Moment, context: ModelContext) {
         MediaStore.deleteFile(named: moment.videoFileName)
         MediaStore.deleteFile(named: moment.thumbnailFileName)
+        ThumbnailStore.invalidate(moment.thumbnailFileName)
         if viewerMoment?.id == moment.id {
             viewerMoment = nil
             if overlay == .viewer { overlay = nil }

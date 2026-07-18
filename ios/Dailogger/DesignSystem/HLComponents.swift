@@ -62,22 +62,30 @@ struct MomentThumb: View {
     let moment: Moment
     var radius: CGFloat = 11
 
+    @State private var loadedImage: UIImage?
+
     var body: some View {
-        if let url = moment.thumbnailURL,
-           let image = UIImage(contentsOfFile: url.path) {
-            Color.clear
-                .overlay {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                }
-                .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: radius, style: .continuous)
-                        .strokeBorder(HL.ink, lineWidth: 2)
-                }
-        } else {
-            PlaceholderBox(radius: radius)
+        Group {
+            if let image = loadedImage ?? ThumbnailStore.cached(moment.thumbnailFileName) {
+                Color.clear
+                    .overlay {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: radius, style: .continuous)
+                            .strokeBorder(HL.ink, lineWidth: 2)
+                    }
+            } else {
+                PlaceholderBox(radius: radius)
+            }
+        }
+        .task(id: moment.thumbnailFileName) {
+            guard moment.thumbnailFileName != nil,
+                  ThumbnailStore.cached(moment.thumbnailFileName) == nil else { return }
+            loadedImage = await ThumbnailStore.load(moment.thumbnailFileName)
         }
     }
 }

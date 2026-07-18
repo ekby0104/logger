@@ -6,7 +6,7 @@ import WidgetKit
 struct DailoggerWidgetBundle: WidgetBundle {
     init() {
         // Register the bundled handwriting font for widget rendering.
-        for url in Bundle.main.urls(forResourcesWithExtension: "ttf", subdirectory: nil) ?? [] {
+        for url in Bundle.main.urls(forResourcesWithExtension: "otf", subdirectory: nil) ?? [] {
             CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
         }
     }

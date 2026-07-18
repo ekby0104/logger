@@ -7,8 +7,10 @@ import Foundation
 enum FontLoader {
     static func registerBundledFonts(bundle: Bundle = .main) {
         var urls: [URL] = []
-        urls += bundle.urls(forResourcesWithExtension: "ttf", subdirectory: nil) ?? []
-        urls += bundle.urls(forResourcesWithExtension: "ttf", subdirectory: "Fonts") ?? []
+        for ext in ["ttf", "otf"] {
+            urls += bundle.urls(forResourcesWithExtension: ext, subdirectory: nil) ?? []
+            urls += bundle.urls(forResourcesWithExtension: ext, subdirectory: "Fonts") ?? []
+        }
         for url in urls {
             CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
         }

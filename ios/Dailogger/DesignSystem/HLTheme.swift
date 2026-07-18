@@ -27,14 +27,14 @@ enum HL {
 }
 
 extension Font {
-    /// Hand-drawn display face — Gaegu(개구), bundled in Fonts/, covers
-    /// Korean with the same handwriting mood. Falls back to the system
-    /// font automatically if registration fails.
+    /// Hand-drawn face — 권정애체 (Together-KwonJungae), bundled in Fonts/.
+    /// Single weight, so both roles share it; hierarchy comes from size
+    /// and color. Falls back to the system font if registration fails.
     static func hl(_ size: CGFloat) -> Font {
-        .custom("Gaegu-Bold", size: size)
+        .custom("Together-KwonJungae", size: size)
     }
 
     static func hlRegular(_ size: CGFloat) -> Font {
-        .custom("Gaegu-Regular", size: size)
+        .custom("Together-KwonJungae", size: size)
     }
 }

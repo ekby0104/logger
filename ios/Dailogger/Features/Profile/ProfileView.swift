@@ -7,10 +7,7 @@ struct ProfileView: View {
     @Query(sort: \DailyLog.date, order: .reverse) private var logs: [DailyLog]
     @Query private var moments: [Moment]
     @State private var showSettings = false
-    @State private var showEditProfile = false
     @State private var showFontPicker = false
-    @AppStorage("profileName") private var profileName = ""
-    @AppStorage("profileHandle") private var profileHandle = ""
     @AppStorage(ReminderService.enabledKey) private var reminderEnabled = false
 
     private let archiveColumns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 3)
@@ -65,30 +62,10 @@ struct ProfileView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 14) {
-            Circle()
-                .fill(HL.placeholder)
-                .overlay {
-                    Circle().strokeBorder(HL.ink, lineWidth: 2)
-                }
-                .overlay {
-                    Image(systemName: "person")
-                        .font(.system(size: 28, weight: .medium))
-                        .foregroundStyle(HL.ink)
-                }
-                .frame(width: 64, height: 64)
-                .background {
-                    Circle().fill(HL.ink).offset(x: 3, y: 3)
-                }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(profileName.isEmpty ? String(localized: "My Days") : profileName)
-                    .font(.hl(19))
-                    .foregroundStyle(HL.ink)
-                Text(profileHandle.isEmpty ? "@my.daily" : profileHandle)
-                    .font(.hlRegular(13))
-                    .foregroundStyle(HL.gray)
-            }
+        HStack(alignment: .top) {
+            Text("My Days")
+                .font(.hl(27))
+                .foregroundStyle(HL.ink)
 
             Spacer()
 
@@ -103,9 +80,6 @@ struct ProfileView: View {
             .buttonStyle(.plain)
             .hardCard(radius: 12, shadowOffset: 3)
             .confirmationDialog("Settings", isPresented: $showSettings) {
-                Button("Edit profile") {
-                    showEditProfile = true
-                }
                 Button("Change font") {
                     showFontPicker = true
                 }
@@ -126,10 +100,6 @@ struct ProfileView: View {
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("Removes the demo moments (no video) and past demo days. Your real recordings and blogs stay.")
-            }
-            .sheet(isPresented: $showEditProfile) {
-                ProfileEditSheet()
-                    .presentationDetents([.height(340)])
             }
             .confirmationDialog("Change font", isPresented: $showFontPicker) {
                 Button("Handwriting (KwonJungae)") { setFont(.kwonjungae) }
@@ -249,70 +219,5 @@ struct ProfileView: View {
         }
         UserDefaults.standard.set(true, forKey: SeedData.samplesRemovedKey)
         model.flashToast(String(localized: "Sample data removed"))
-    }
-}
-
-// MARK: - Profile edit sheet
-
-private struct ProfileEditSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @AppStorage("profileName") private var profileName = ""
-    @AppStorage("profileHandle") private var profileHandle = ""
-    @State private var name = ""
-    @State private var handle = ""
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Edit profile")
-                .font(.hl(18))
-                .foregroundStyle(HL.ink)
-                .frame(maxWidth: .infinity)
-                .padding(.top, 24)
-                .padding(.bottom, 20)
-
-            fieldLabel("Name")
-            styledField(String(localized: "My Days"), text: $name)
-                .padding(.bottom, 16)
-
-            fieldLabel("Handle")
-            styledField("@my.daily", text: $handle)
-                .padding(.bottom, 24)
-
-            PrimaryButton(title: String(localized: "Save"), systemImage: "checkmark") {
-                profileName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                profileHandle = handle.trimmingCharacters(in: .whitespacesAndNewlines)
-                dismiss()
-            }
-        }
-        .padding(.horizontal, 20)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(HL.paper.ignoresSafeArea())
-        .onAppear {
-            name = profileName
-            handle = profileHandle
-        }
-    }
-
-    private func fieldLabel(_ text: LocalizedStringKey) -> some View {
-        Text(text)
-            .font(.hl(14))
-            .foregroundStyle(HL.ink)
-            .padding(.bottom, 8)
-    }
-
-    private func styledField(_ placeholder: String, text: Binding<String>) -> some View {
-        TextField(placeholder, text: text)
-            .font(.hlRegular(15))
-            .foregroundStyle(HL.ink)
-            .autocorrectionDisabled()
-            .textInputAutocapitalization(.never)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .background {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(.white)
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(HL.ink, lineWidth: 2)
-            }
     }
 }

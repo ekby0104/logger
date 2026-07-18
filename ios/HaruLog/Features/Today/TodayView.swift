@@ -5,6 +5,11 @@ struct TodayView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.modelContext) private var context
     @Query(sort: \Moment.createdAt) private var moments: [Moment]
+    @Query private var logs: [DailyLog]
+
+    private var streak: Int {
+        Stats.streak(recordDates: logs.map(\.date) + moments.map(\.createdAt))
+    }
 
     private var dateLabel: String {
         let formatter = DateFormatter()
@@ -52,7 +57,7 @@ struct TodayView: View {
                     .foregroundStyle(HL.ink)
             }
             Spacer()
-            StreakPill(days: 12)
+            StreakPill(days: streak)
         }
     }
 
@@ -74,10 +79,17 @@ struct TodayView: View {
             .padding(.bottom, 15)
 
             HStack(spacing: 6) {
-                ForEach(0..<6) { _ in
-                    PlaceholderBox(radius: 9)
+                ForEach(Array(moments.prefix(6))) { moment in
+                    MomentThumb(moment: moment, radius: 9)
                         .frame(height: 54)
                         .frame(maxWidth: .infinity)
+                }
+                if moments.count < 6 {
+                    ForEach(0..<(6 - min(moments.count, 6)), id: \.self) { _ in
+                        PlaceholderBox(radius: 9)
+                            .frame(height: 54)
+                            .frame(maxWidth: .infinity)
+                    }
                 }
             }
             .padding(.bottom, 16)

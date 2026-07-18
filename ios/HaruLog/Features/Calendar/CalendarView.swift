@@ -4,6 +4,7 @@ import SwiftData
 struct CalendarView: View {
     @Environment(AppModel.self) private var model
     @Query(sort: \DailyLog.date) private var logs: [DailyLog]
+    @Query(sort: \Moment.createdAt) private var moments: [Moment]
     @State private var selectedDay = Calendar.current.component(.day, from: .now)
 
     private var calendar: Calendar { Calendar.current }
@@ -121,6 +122,13 @@ struct CalendarView: View {
         logs.first { calendar.component(.day, from: $0.date) == selectedDay }
     }
 
+    private var selectedDayMoments: [Moment] {
+        moments.filter {
+            calendar.component(.day, from: $0.createdAt) == selectedDay
+                && calendar.isDate($0.createdAt, equalTo: .now, toGranularity: .month)
+        }
+    }
+
     private var detailCard: some View {
         let log = selectedLog
         let meta: String
@@ -147,10 +155,17 @@ struct CalendarView: View {
                 }
 
                 HStack(spacing: 7) {
-                    ForEach(0..<4) { _ in
-                        PlaceholderBox(radius: 10)
+                    ForEach(Array(selectedDayMoments.prefix(4))) { moment in
+                        MomentThumb(moment: moment, radius: 10)
                             .aspectRatio(9.0 / 16.0, contentMode: .fit)
                             .frame(maxWidth: .infinity)
+                    }
+                    if selectedDayMoments.count < 4 {
+                        ForEach(0..<(4 - min(selectedDayMoments.count, 4)), id: \.self) { _ in
+                            PlaceholderBox(radius: 10)
+                                .aspectRatio(9.0 / 16.0, contentMode: .fit)
+                                .frame(maxWidth: .infinity)
+                        }
                     }
                 }
 

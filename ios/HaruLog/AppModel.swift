@@ -121,6 +121,7 @@ final class AppModel {
     // MARK: - Recording
 
     func toggleRecord() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         if isRecording {
             stopTimer()
             segments.append(max(elapsed, 1))
@@ -229,6 +230,7 @@ final class AppModel {
         resetCapture()
         overlay = nil
         tab = .today
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
         flashToast("Saved to your timeline")
     }
 
@@ -262,6 +264,7 @@ final class AppModel {
             self.blogDate = .now
             self.isWritingBlog = false
             self.overlay = .blog
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
 
             let log = self.todayLog(context: context) ?? {
                 let newLog = DailyLog(

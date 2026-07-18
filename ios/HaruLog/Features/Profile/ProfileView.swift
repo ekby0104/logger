@@ -3,10 +3,20 @@ import SwiftData
 
 struct ProfileView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.modelContext) private var context
     @Query(sort: \DailyLog.date, order: .reverse) private var logs: [DailyLog]
     @Query private var moments: [Moment]
+    @State private var showSettings = false
 
     private let archiveColumns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 3)
+
+    private var streak: Int {
+        Stats.streak(recordDates: logs.map(\.date) + moments.map(\.createdAt))
+    }
+
+    private var blogCount: Int {
+        logs.filter { $0.blogText != nil }.count
+    }
 
     var body: some View {
         ScrollView {
@@ -70,7 +80,7 @@ struct ProfileView: View {
             Spacer()
 
             Button {
-                // Settings: 2차 릴리즈
+                showSettings = true
             } label: {
                 Image(systemName: "gearshape")
                     .font(.system(size: 18, weight: .semibold))
@@ -79,13 +89,36 @@ struct ProfileView: View {
             }
             .buttonStyle(.plain)
             .hardCard(radius: 12, shadowOffset: 3)
+            .confirmationDialog("Settings", isPresented: $showSettings) {
+                Button("Remove sample data", role: .destructive) {
+                    removeSampleData()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Removes the demo moments (no video) and past demo days. Your real recordings and blogs stay.")
+            }
         }
+    }
+
+    /// Deletes seeded demo content: moments without a recorded clip and
+    /// past days that never got a blog. Real recordings are untouched.
+    private func removeSampleData() {
+        let calendar = Calendar.current
+        let todayStart = calendar.startOfDay(for: .now)
+        for moment in moments where moment.videoFileName == nil {
+            context.delete(moment)
+        }
+        for log in logs where log.blogText == nil && log.date < todayStart {
+            context.delete(log)
+        }
+        UserDefaults.standard.set(true, forKey: SeedData.samplesRemovedKey)
+        model.flashToast("Sample data removed")
     }
 
     private var statsCard: some View {
         HStack(spacing: 0) {
-            statItem(value: "12", label: "Streak")
-            statItem(value: "\(logs.count)", label: "Blogs")
+            statItem(value: "\(streak)", label: "Streak")
+            statItem(value: "\(blogCount)", label: "Blogs")
             statItem(value: "\(moments.count)", label: "Moments")
         }
         .padding(.vertical, 16)

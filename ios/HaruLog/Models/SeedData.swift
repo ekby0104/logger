@@ -3,7 +3,10 @@ import SwiftData
 
 /// Inserts wireframe mock data on first launch so every screen has content.
 enum SeedData {
+    static let samplesRemovedKey = "harulog.samplesRemoved"
+
     static func insertIfNeeded(context: ModelContext) {
+        guard !UserDefaults.standard.bool(forKey: samplesRemovedKey) else { return }
         let count = (try? context.fetchCount(FetchDescriptor<Moment>())) ?? 0
         guard count == 0 else { return }
 

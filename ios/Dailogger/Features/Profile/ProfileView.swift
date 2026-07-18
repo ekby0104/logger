@@ -146,9 +146,23 @@ struct ProfileView: View {
         .buttonStyle(.plain)
     }
 
+    /// A clip from the log's day to represent it in the archive grid —
+    /// prefers one that actually has a thumbnail file.
+    private func dayThumbnailMoment(_ log: DailyLog) -> Moment? {
+        let calendar = Calendar.current
+        let dayMoments = moments.filter { calendar.isDate($0.createdAt, inSameDayAs: log.date) }
+        return dayMoments.first { $0.thumbnailFileName != nil } ?? dayMoments.first
+    }
+
     private func archiveCellContent(_ log: DailyLog) -> some View {
-        PlaceholderBox(radius: 12)
-            .aspectRatio(9.0 / 16.0, contentMode: .fit)
+        Group {
+            if let moment = dayThumbnailMoment(log) {
+                MomentThumb(moment: moment, radius: 12)
+            } else {
+                PlaceholderBox(radius: 12)
+            }
+        }
+        .aspectRatio(9.0 / 16.0, contentMode: .fit)
             .overlay(alignment: .bottomLeading) {
                 Text(log.dayLabel)
                     .font(.hl(12))

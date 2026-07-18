@@ -47,10 +47,17 @@
 			);
 			target = BB0000000000000000000003 /* DailoggerWidgetExtension */;
 		};
+		BB000000000000000000000F /* Exceptions for "Dailogger" folder in "Dailogger" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = AA0000000000000000000005 /* Dailogger */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		AA0000000000000000000001 /* Dailogger */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Dailogger; sourceTree = "<group>"; };
+		AA0000000000000000000001 /* Dailogger */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (BB000000000000000000000F /* Exceptions for "Dailogger" folder in "Dailogger" target */, ); explicitFileTypes = {}; explicitFolders = (); path = Dailogger; sourceTree = "<group>"; };
 		BB0000000000000000000002 /* DailoggerWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (BB000000000000000000000E /* Exceptions for "DailoggerWidget" folder in "DailoggerWidgetExtension" target */, ); explicitFileTypes = {}; explicitFolders = (); path = DailoggerWidget; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -294,7 +301,7 @@
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "모먼트 영상의 소리를 녹음하기 위해 마이크를 사용합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_FILE = Dailogger/Info.plist;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -327,7 +334,7 @@
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "모먼트 영상의 소리를 녹음하기 위해 마이크를 사용합니다.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_FILE = Dailogger/Info.plist;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (

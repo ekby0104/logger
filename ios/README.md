@@ -53,6 +53,20 @@ open HaruLog.xcodeproj
 > 카메라는 시뮬레이터에 하드웨어가 없으므로 **실기기(아이폰 케이블 연결)에서 테스트**해야 합니다.
 > 첫 진입 시 카메라·마이크 권한 팝업이 뜹니다.
 
+## TestFlight 배포 절차
+
+1. **App Store Connect에서 앱 등록** (최초 1회): [appstoreconnect.apple.com](https://appstoreconnect.apple.com) → 앱 → ＋ → 신규 앱
+   - 플랫폼 iOS, 이름 `하루로그`(또는 HaruLog), 번들 ID `com.harulog.app`(Xcode에서 Team 선택 시 자동 등록됨), SKU는 아무 문자열
+2. Xcode: Signing & Capabilities → **Team 선택** 확인
+3. 상단 기기 선택을 **Any iOS Device (arm64)** 로 변경
+4. 메뉴 **Product → Archive**
+5. 완료되면 Organizer 창 → **Distribute App → App Store Connect → Upload** (기본값으로 진행)
+6. 10~30분 후 App Store Connect → 앱 → **TestFlight 탭**에 빌드가 나타남
+7. 내부 테스팅 → 그룹 생성 → 본인(Apple ID) 추가
+8. 아이폰에 **TestFlight 앱** 설치 → 초대 수락 → 설치 완료 🎉
+
+이후 새 버전을 올릴 때는 4~5번만 반복하면 됩니다 (빌드 번호는 Xcode가 자동 증가하도록 General → Identity에서 Build 값을 올리거나 `agvtool` 사용).
+
 ## 구조
 
 ```

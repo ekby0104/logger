@@ -193,6 +193,7 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "하루의 순간을 영상으로 기록하기 위해 카메라를 사용합니다.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "모먼트에 장소를 자동으로 태그하기 위해 위치 정보를 사용합니다.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "모먼트 영상의 소리를 녹음하기 위해 마이크를 사용합니다.";
@@ -224,6 +225,7 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "하루의 순간을 영상으로 기록하기 위해 카메라를 사용합니다.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "모먼트에 장소를 자동으로 태그하기 위해 위치 정보를 사용합니다.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "모먼트 영상의 소리를 녹음하기 위해 마이크를 사용합니다.";

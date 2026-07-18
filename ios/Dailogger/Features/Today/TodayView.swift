@@ -95,16 +95,9 @@ struct TodayView: View {
             }
             .padding(.bottom, 16)
 
-            PrimaryButton(
-                title: model.isWritingBlog
-                    ? String(localized: "Writing your day…")
-                    : String(localized: "Create daily blog"),
-                systemImage: model.isWritingBlog ? "hourglass" : "sparkles"
-            ) {
-                model.makeBlog(moments: moments, context: context)
+            PrimaryButton(title: String(localized: "Create daily blog"), systemImage: "sparkles") {
+                model.openBlogEditor(context: context)
             }
-            .disabled(model.isWritingBlog)
-            .opacity(model.isWritingBlog ? 0.7 : 1)
         }
         .padding(20)
         .hardCard(radius: 20)

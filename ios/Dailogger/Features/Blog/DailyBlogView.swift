@@ -1,9 +1,12 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
-/// Full-screen daily blog: generated title + diary body + today's clip strip.
+/// Daily blog editor: editable title/body, opt-in AI writing,
+/// clip strip, and reel-video creation with app-styled overlays.
 struct DailyBlogView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.modelContext) private var context
     @Query(sort: \Moment.createdAt) private var moments: [Moment]
     @State private var reelURL: URL?
     @State private var isMakingReel = false
@@ -27,6 +30,8 @@ struct DailyBlogView: View {
     }
 
     var body: some View {
+        @Bindable var model = model
+
         VStack(spacing: 0) {
             header
 
@@ -36,7 +41,7 @@ struct DailyBlogView: View {
                         .font(.hlRegular(13))
                         .foregroundStyle(HL.gray)
 
-                    Text(model.blogTitle)
+                    TextField("Give the day a title", text: $model.blogTitle, axis: .vertical)
                         .font(.hl(26))
                         .foregroundStyle(HL.ink)
                         .padding(.top, 4)
@@ -63,14 +68,22 @@ struct DailyBlogView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 18)
 
-                    Text(model.blogBody)
+                    TextField("Write about your day…", text: $model.blogBody, axis: .vertical)
                         .font(.hlRegular(15))
                         .foregroundStyle(HL.ink)
-                        .lineSpacing(6)
+                        .lineLimit(6...30)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(18)
                         .hardCard(radius: 18)
-                        .padding(.bottom, 24)
+                        .padding(.bottom, 16)
+
+                    aiButton
+                        .padding(.bottom, 10)
+
+                    PrimaryButton(title: String(localized: "Save blog"), systemImage: "checkmark") {
+                        model.saveBlog(context: context)
+                    }
+                    .padding(.bottom, 24)
 
                     if !dayMoments.isEmpty {
                         Text("Clips from this day")
@@ -106,54 +119,7 @@ struct DailyBlogView: View {
         .overlay(alignment: .bottom) {
             ToastView()
         }
-    }
-
-    /// Merges the day's clips into a single video and offers it for sharing.
-    @ViewBuilder
-    private var reelSection: some View {
-        if !clipURLs.isEmpty {
-            if let reelURL {
-                ShareLink(item: reelURL) {
-                    HStack(spacing: 7) {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 16, weight: .bold))
-                        Text("Share reel video")
-                            .font(.hl(16))
-                    }
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                }
-                .buttonStyle(.plain)
-                .hardCard(fill: HL.purple, radius: 12, shadowOffset: 4)
-            } else {
-                PrimaryButton(
-                    title: isMakingReel
-                        ? String(localized: "Making the reel…")
-                        : String(localized: "Create reel video"),
-                    systemImage: isMakingReel ? "hourglass" : "film",
-                    height: 50
-                ) {
-                    makeReel()
-                }
-                .disabled(isMakingReel)
-                .opacity(isMakingReel ? 0.7 : 1)
-            }
-        }
-    }
-
-    private func makeReel() {
-        guard !isMakingReel else { return }
-        isMakingReel = true
-        let urls = clipURLs
-        Task { @MainActor in
-            do {
-                reelURL = try await VideoComposer.merge(segmentURLs: urls)
-            } catch {
-                model.flashToast(String(localized: "Couldn't make the reel"))
-            }
-            isMakingReel = false
-        }
+        .onChange(of: model.blogBody) { reelURL = nil }
     }
 
     private var header: some View {
@@ -190,6 +156,85 @@ struct DailyBlogView: View {
                 .overlay(alignment: .bottom) {
                     Rectangle().fill(HL.ink).frame(height: 2)
                 }
+        }
+    }
+
+    private var aiButton: some View {
+        Button {
+            model.generateBlogWithAI(context: context)
+        } label: {
+            HStack(spacing: 7) {
+                Image(systemName: model.isWritingBlog ? "hourglass" : "sparkles")
+                    .font(.system(size: 15, weight: .bold))
+                if model.isWritingBlog {
+                    Text("Writing your day…")
+                        .font(.hl(15))
+                } else {
+                    Text("Write with AI")
+                        .font(.hl(15))
+                }
+            }
+            .foregroundStyle(HL.purple)
+            .frame(maxWidth: .infinity)
+            .frame(height: 48)
+            .background {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(.white)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(HL.purple, lineWidth: 2)
+            }
+        }
+        .buttonStyle(.plain)
+        .disabled(model.isWritingBlog)
+        .opacity(model.isWritingBlog ? 0.7 : 1)
+    }
+
+    /// Merges the day's clips into a reel with overlay text and offers sharing.
+    @ViewBuilder
+    private var reelSection: some View {
+        if !clipURLs.isEmpty {
+            if let reelURL {
+                ShareLink(item: reelURL) {
+                    HStack(spacing: 7) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 16, weight: .bold))
+                        Text("Share reel video")
+                            .font(.hl(16))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                }
+                .buttonStyle(.plain)
+                .hardCard(fill: HL.purple, radius: 12, shadowOffset: 4)
+            } else {
+                PrimaryButton(
+                    title: isMakingReel
+                        ? String(localized: "Making the reel…")
+                        : String(localized: "Create reel video"),
+                    systemImage: isMakingReel ? "hourglass" : "film",
+                    height: 50
+                ) {
+                    makeReel()
+                }
+                .disabled(isMakingReel)
+                .opacity(isMakingReel ? 0.7 : 1)
+            }
+        }
+    }
+
+    private func makeReel() {
+        guard !isMakingReel else { return }
+        isMakingReel = true
+        let reelMoments = dayMoments.filter { $0.videoURL != nil }
+        let blogText = model.blogBody
+        Task { @MainActor in
+            do {
+                reelURL = try await ReelComposer.makeReel(moments: reelMoments, blogText: blogText)
+            } catch {
+                model.flashToast(String(localized: "Couldn't make the reel"))
+            }
+            isMakingReel = false
         }
     }
 }

@@ -246,6 +246,21 @@
     },
     "Couldn't make the reel" : {
       "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "릴 영상을 만들지 못했어요" } } }
+    },
+    "Write with AI" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "AI로 작성" } } }
+    },
+    "Give the day a title" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "하루에 제목을 붙여보세요" } } }
+    },
+    "Write about your day…" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "오늘 하루를 적어보세요…" } } }
+    },
+    "Save blog" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "블로그 저장" } } }
+    },
+    "Blog saved" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "블로그를 저장했어요" } } }
     }
   },
   "version" : "1.0"

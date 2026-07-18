@@ -255,52 +255,62 @@ final class AppModel {
         flashToast(String(localized: "Moment deleted"))
     }
 
-    func makeBlog(moments: [Moment], context: ModelContext) {
-        guard !moments.isEmpty else {
-            flashToast(String(localized: "Record a moment first"))
-            return
-        }
-        guard !isWritingBlog else { return }
-
-        // Reuse today's saved blog while the moment count is unchanged.
-        if let saved = todayLog(context: context),
+    /// Opens today's blog editor with the saved draft (or blank fields).
+    /// Generation is opt-in via the "Write with AI" button in the editor.
+    func openBlogEditor(context: ModelContext) {
+        blogDate = .now
+        if let saved = log(for: .now, context: context),
            let title = saved.blogTitle,
-           let body = saved.blogText,
-           saved.clipCount == moments.count {
+           let body = saved.blogText {
             blogTitle = title
             blogBody = body
             blogIsAI = saved.blogIsAI ?? false
-            blogDate = .now
-            overlay = .blog
+        } else {
+            blogTitle = ""
+            blogBody = ""
+            blogIsAI = false
+        }
+        overlay = .blog
+    }
+
+    func generateBlogWithAI(context: ModelContext) {
+        guard !isWritingBlog else { return }
+        let dayMoments = moments(on: blogDate, context: context)
+        guard !dayMoments.isEmpty else {
+            flashToast(String(localized: "Record a moment first"))
             return
         }
-
         isWritingBlog = true
         Task { @MainActor [weak self] in
             guard let self else { return }
-            let result = await BlogWriter.write(for: moments, date: .now)
+            let result = await BlogWriter.write(for: dayMoments, date: self.blogDate)
             self.blogTitle = result.title
             self.blogBody = result.body
             self.blogIsAI = result.isAIGenerated
-            self.blogDate = .now
             self.isWritingBlog = false
-            self.overlay = .blog
             UINotificationFeedbackGenerator().notificationOccurred(.success)
-
-            let log = self.todayLog(context: context) ?? {
-                let newLog = DailyLog(
-                    date: Calendar.current.startOfDay(for: .now),
-                    clipCount: moments.count
-                )
-                context.insert(newLog)
-                return newLog
-            }()
-            log.clipCount = moments.count
-            log.blogTitle = result.title
-            log.blogText = result.body
-            log.blogIsAI = result.isAIGenerated
-            log.isBlogReady = true
         }
+    }
+
+    func saveBlog(context: ModelContext) {
+        let dayMoments = moments(on: blogDate, context: context)
+        let log = log(for: blogDate, context: context) ?? {
+            let newLog = DailyLog(
+                date: Calendar.current.startOfDay(for: blogDate),
+                clipCount: dayMoments.count
+            )
+            context.insert(newLog)
+            return newLog
+        }()
+        if !dayMoments.isEmpty {
+            log.clipCount = dayMoments.count
+        }
+        log.blogTitle = blogTitle
+        log.blogText = blogBody
+        log.blogIsAI = blogIsAI
+        log.isBlogReady = true
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        flashToast(String(localized: "Blog saved"))
     }
 
     /// Opens a saved blog from the archive (Calendar day / Me tab).
@@ -316,14 +326,25 @@ final class AppModel {
         overlay = .blog
     }
 
-    private func todayLog(context: ModelContext) -> DailyLog? {
+    private func log(for date: Date, context: ModelContext) -> DailyLog? {
         let calendar = Calendar.current
-        let start = calendar.startOfDay(for: .now)
+        let start = calendar.startOfDay(for: date)
         let end = calendar.date(byAdding: .day, value: 1, to: start) ?? start
         let descriptor = FetchDescriptor<DailyLog>(
             predicate: #Predicate { $0.date >= start && $0.date < end }
         )
         return (try? context.fetch(descriptor))?.first
+    }
+
+    private func moments(on date: Date, context: ModelContext) -> [Moment] {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: date)
+        let end = calendar.date(byAdding: .day, value: 1, to: start) ?? start
+        let descriptor = FetchDescriptor<Moment>(
+            predicate: #Predicate { $0.createdAt >= start && $0.createdAt < end },
+            sortBy: [SortDescriptor(\.createdAt)]
+        )
+        return (try? context.fetch(descriptor)) ?? []
     }
 
     // MARK: - Toast

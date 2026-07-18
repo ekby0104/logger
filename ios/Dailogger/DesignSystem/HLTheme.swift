@@ -40,30 +40,40 @@ enum HLFontChoice: String, CaseIterable {
             rawValue: UserDefaults.standard.string(forKey: storageKey) ?? ""
         ) ?? .kwonjungae
     }
+
+    /// KwonJungae renders thin and small for its point size, so it gets a
+    /// size boost relative to the other choices.
+    var sizeScale: CGFloat {
+        self == .kwonjungae ? 1.15 : 1
+    }
 }
 
 extension Font {
     /// Display face for the chosen typeface (bold role).
     static func hl(_ size: CGFloat) -> Font {
-        switch HLFontChoice.current {
+        let choice = HLFontChoice.current
+        let scaled = size * choice.sizeScale
+        switch choice {
         case .kwonjungae:
-            return .custom("Together-KwonJungae", size: size)
+            return .custom("Together-KwonJungae", size: scaled)
         case .typewriter:
-            return .custom("AmericanTypewriter-Bold", size: size)
+            return .custom("AmericanTypewriter-Bold", size: scaled)
         case .system:
-            return .system(size: size, weight: .bold)
+            return .system(size: scaled, weight: .bold)
         }
     }
 
     /// Body face for the chosen typeface (regular role).
     static func hlRegular(_ size: CGFloat) -> Font {
-        switch HLFontChoice.current {
+        let choice = HLFontChoice.current
+        let scaled = size * choice.sizeScale
+        switch choice {
         case .kwonjungae:
-            return .custom("Together-KwonJungae", size: size)
+            return .custom("Together-KwonJungae", size: scaled)
         case .typewriter:
-            return .custom("AmericanTypewriter", size: size)
+            return .custom("AmericanTypewriter", size: scaled)
         case .system:
-            return .system(size: size, weight: .regular)
+            return .system(size: scaled, weight: .regular)
         }
     }
 }

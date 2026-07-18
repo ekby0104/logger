@@ -430,15 +430,17 @@ enum ReelComposer {
 /// translucent blog panel.
 enum ReelOverlayRenderer {
     private static func font(_ size: CGFloat) -> UIFont {
-        switch HLFontChoice.current {
+        let choice = HLFontChoice.current
+        let scaled = size * choice.sizeScale
+        switch choice {
         case .kwonjungae:
-            return UIFont(name: "Together-KwonJungae", size: size)
-                ?? UIFont.boldSystemFont(ofSize: size)
+            return UIFont(name: "Together-KwonJungae", size: scaled)
+                ?? UIFont.boldSystemFont(ofSize: scaled)
         case .typewriter:
-            return UIFont(name: "AmericanTypewriter-Bold", size: size)
-                ?? UIFont.boldSystemFont(ofSize: size)
+            return UIFont(name: "AmericanTypewriter-Bold", size: scaled)
+                ?? UIFont.boldSystemFont(ofSize: scaled)
         case .system:
-            return UIFont.boldSystemFont(ofSize: size)
+            return UIFont.boldSystemFont(ofSize: scaled)
         }
     }
 

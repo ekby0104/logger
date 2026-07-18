@@ -56,7 +56,8 @@ struct StreakWidgetView: View {
         case "system":
             return .system(size: size, weight: .bold)
         default:
-            return .custom("Together-KwonJungae", size: size)
+            // KwonJungae renders small for its point size — boost it.
+            return .custom("Together-KwonJungae", size: size * 1.15)
         }
     }
 

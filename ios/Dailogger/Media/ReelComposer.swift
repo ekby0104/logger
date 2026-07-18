@@ -176,11 +176,13 @@ enum ReelComposer {
             origin: CGPoint(x: lineX - scale, y: flipY(mediaTop, railHeight))
         ))
 
+        // Dot (and its time label) sit two dashes below the rail's top.
         let dotDiameter = 14 * scale
+        let dotTop = cardTop + 23 * scale
         let dotImage = ReelOverlayRenderer.dot(diameter: dotDiameter, fill: purple, ink: ink, border: border)
         parentLayer.addSublayer(imageLayer(
             dotImage,
-            origin: CGPoint(x: lineX - dotDiameter / 2, y: flipY(cardTop + 3 * scale, dotDiameter))
+            origin: CGPoint(x: lineX - dotDiameter / 2, y: flipY(dotTop, dotDiameter))
         ))
 
         // Card (white, ink border, hard shadow)
@@ -220,7 +222,7 @@ enum ReelComposer {
                 timeImage,
                 origin: CGPoint(
                     x: lineX - 10 * scale - timeImage.size.width,
-                    y: flipY(cardTop + 10 * scale - timeImage.size.height / 2, timeImage.size.height)
+                    y: flipY(dotTop + dotDiameter / 2 - timeImage.size.height / 2, timeImage.size.height)
                 )
             )
             setVisibility(timeLayer, start: segment.start, duration: segment.duration, totalSeconds: totalSeconds)

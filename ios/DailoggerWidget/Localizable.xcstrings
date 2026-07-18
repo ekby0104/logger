@@ -1,0 +1,18 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Streak" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "스트릭" } } }
+    },
+    "No clips yet today" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "오늘은 아직 클립이 없어요" } } }
+    },
+    "%lld clips today" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "오늘 클립 %lld개" } } }
+    },
+    "Your recording streak at a glance." : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "연속 기록을 한눈에 확인해요." } } }
+    }
+  },
+  "version" : "1.0"
+}

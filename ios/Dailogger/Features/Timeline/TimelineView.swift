@@ -69,16 +69,18 @@ private struct TimelineEntry: View {
                 .font(.hl(12))
                 .foregroundStyle(HL.gray)
                 .frame(width: 40, alignment: .trailing)
-                .padding(.top, 2)
+                .padding(.top, 4)
 
+            // Dot spans x 40-54 so its center (47) sits exactly on the
+            // dashed rail (leading 46 + width 2), slightly below the card top.
             Circle()
                 .fill(HL.purple)
                 .overlay {
                     Circle().strokeBorder(HL.ink, lineWidth: 2)
                 }
                 .frame(width: 14, height: 14)
-                .padding(.top, 4)
-                .padding(.horizontal, 5)
+                .padding(.top, 8)
+                .padding(.trailing, 10)
 
             card
         }

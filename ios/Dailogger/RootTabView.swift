@@ -38,6 +38,7 @@ struct RootTabView: View {
         .environment(model)
         .task {
             SeedData.insertIfNeeded(context: context)
+            model.refreshWidgetAndReminder(context: context)
         }
     }
 }

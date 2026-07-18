@@ -168,8 +168,9 @@ enum ReelComposer {
 
         // Dashed rail + purple dot. The rail's top aligns with the media area
         // (so it never pokes into platform UI like the Instagram story
-        // avatar), while its bottom runs slightly past the media.
-        let railHeight = mediaH + 12 * scale
+        // avatar), while its bottom runs slightly past the whole card,
+        // caption strip included.
+        let railHeight = cardH + 12 * scale
         let railImage = ReelOverlayRenderer.dashedLine(height: railHeight, width: 2 * scale, ink: ink)
         parentLayer.addSublayer(imageLayer(
             railImage,

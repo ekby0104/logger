@@ -10,6 +10,7 @@ struct ProfileView: View {
     @State private var showEditProfile = false
     @AppStorage("profileName") private var profileName = ""
     @AppStorage("profileHandle") private var profileHandle = ""
+    @AppStorage(ReminderService.enabledKey) private var reminderEnabled = false
 
     private let archiveColumns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 3)
 
@@ -104,6 +105,17 @@ struct ProfileView: View {
                 Button("Edit profile") {
                     showEditProfile = true
                 }
+                if reminderEnabled {
+                    Button("Turn off daily reminder") {
+                        reminderEnabled = false
+                        ReminderService.reschedule(hasMomentToday: false)
+                        model.flashToast(String(localized: "Daily reminder is off"))
+                    }
+                } else {
+                    Button("Turn on daily reminder (9 PM)") {
+                        enableReminder()
+                    }
+                }
                 Button("Remove sample data", role: .destructive) {
                     removeSampleData()
                 }
@@ -193,6 +205,18 @@ struct ProfileView: View {
                         .strokeBorder(HL.ink, lineWidth: 1.5)
                 }
                 .padding(6)
+        }
+    }
+
+    private func enableReminder() {
+        Task { @MainActor in
+            if await ReminderService.requestAuthorization() {
+                reminderEnabled = true
+                model.refreshWidgetAndReminder(context: context)
+                model.flashToast(String(localized: "Daily reminder is on"))
+            } else {
+                model.flashToast(String(localized: "Allow notifications in Settings"))
+            }
         }
     }
 

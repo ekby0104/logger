@@ -237,6 +237,7 @@ final class AppModel {
         tab = .today
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         flashToast(String(localized: "Saved to your timeline"))
+        refreshWidgetAndReminder(context: context)
     }
 
     func deleteMoment(_ moment: Moment, context: ModelContext) {
@@ -253,6 +254,7 @@ final class AppModel {
         }
         context.delete(moment)
         flashToast(String(localized: "Moment deleted"))
+        refreshWidgetAndReminder(context: context)
     }
 
     /// Opens today's blog editor with the saved draft (or blank fields).
@@ -334,6 +336,17 @@ final class AppModel {
             predicate: #Predicate { $0.date >= start && $0.date < end }
         )
         return (try? context.fetch(descriptor))?.first
+    }
+
+    /// Recomputes streak/today-count for the widget and reschedules the
+    /// daily reminder. Called on launch and whenever moments change.
+    func refreshWidgetAndReminder(context: ModelContext) {
+        let todayMoments = moments(on: .now, context: context)
+        let logs = (try? context.fetch(FetchDescriptor<DailyLog>())) ?? []
+        let allMoments = (try? context.fetch(FetchDescriptor<Moment>())) ?? []
+        let streak = Stats.streak(recordDates: logs.map(\.date) + allMoments.map(\.createdAt))
+        WidgetBridge.update(streak: streak, todayCount: todayMoments.count)
+        ReminderService.reschedule(hasMomentToday: !todayMoments.isEmpty)
     }
 
     private func moments(on date: Date, context: ModelContext) -> [Moment] {

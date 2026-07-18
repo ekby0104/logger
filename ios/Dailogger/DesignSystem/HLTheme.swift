@@ -38,7 +38,7 @@ enum HLFontChoice: String, CaseIterable {
     static var current: HLFontChoice {
         HLFontChoice(
             rawValue: UserDefaults.standard.string(forKey: storageKey) ?? ""
-        ) ?? .kwonjungae
+        ) ?? .typewriter
     }
 
     /// KwonJungae renders thin and small for its point size, so it gets a

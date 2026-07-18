@@ -49,15 +49,15 @@ struct StreakWidgetView: View {
     /// Follows the app's font choice via the shared app group.
     private func widgetFont(_ size: CGFloat) -> Font {
         let choice = UserDefaults(suiteName: "group.com.dailogger.app")?
-            .string(forKey: "appFont") ?? "kwonjungae"
+            .string(forKey: "appFont") ?? "typewriter"
         switch choice {
-        case "typewriter":
-            return .custom("AmericanTypewriter-Bold", size: size)
+        case "kwonjungae":
+            // KwonJungae renders small for its point size — boost it.
+            return .custom("Together-KwonJungae", size: size * 1.15)
         case "system":
             return .system(size: size, weight: .bold)
         default:
-            // KwonJungae renders small for its point size — boost it.
-            return .custom("Together-KwonJungae", size: size * 1.15)
+            return .custom("AmericanTypewriter-Bold", size: size)
         }
     }
 

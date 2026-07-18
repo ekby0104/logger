@@ -166,10 +166,10 @@ enum ReelComposer {
         parentLayer.frame = CGRect(origin: .zero, size: renderSize)
         parentLayer.backgroundColor = paper.cgColor
 
-        // Dashed rail + purple dot. The rail matches the media area's y and
-        // height exactly so it never pokes into platform UI (e.g. the
-        // Instagram story avatar at the top-left).
-        let railHeight = mediaH
+        // Dashed rail + purple dot. The rail's top aligns with the media area
+        // (so it never pokes into platform UI like the Instagram story
+        // avatar), while its bottom runs slightly past the media.
+        let railHeight = mediaH + 12 * scale
         let railImage = ReelOverlayRenderer.dashedLine(height: railHeight, width: 2 * scale, ink: ink)
         parentLayer.addSublayer(imageLayer(
             railImage,

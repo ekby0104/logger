@@ -2,11 +2,16 @@ import AVFoundation
 import CoreMedia
 import UIKit
 
-/// Composes the day's clips into a single reel with app-styled text overlays:
-/// a time·place pill and the caption shown during each moment's segment,
-/// plus the blog text centered across the whole video.
+/// Composes the day's clips into a single reel styled like the Timeline tab:
+/// the video plays inside a white ink-bordered card with a hard shadow on a
+/// paper background, next to a dashed timeline rail with a purple dot.
+/// Each moment's segment shows its time label and caption; the blog text
+/// floats over the media on a translucent ink panel.
 enum ReelComposer {
     private static let ink = UIColor(red: 0x13 / 255, green: 0x18 / 255, blue: 0x26 / 255, alpha: 1)
+    private static let paper = UIColor(red: 0xF4 / 255, green: 0xF5 / 255, blue: 0xF7 / 255, alpha: 1)
+    private static let gray = UIColor(red: 0x4F / 255, green: 0x56 / 255, blue: 0x63 / 255, alpha: 1)
+    private static let purple = UIColor(red: 0xA8 / 255, green: 0x55 / 255, blue: 0xF7 / 255, alpha: 1)
 
     static func makeReel(moments: [Moment], blogText: String) async throws -> URL {
         let clips: [(moment: Moment, url: URL)] = moments.compactMap { moment in
@@ -68,75 +73,139 @@ enum ReelComposer {
         instruction.layerInstructions = [layerInstruction]
         videoComposition.instructions = [instruction]
 
-        // Overlay layer tree. Core Animation origin is bottom-left,
-        // so y positions are measured from the bottom of the frame.
+        // ----- Timeline-card layout (computed top-down, converted to CA's
+        // bottom-left origin via flipY) -----
+        let W = renderSize.width
+        let H = renderSize.height
+        let scale = W / 390
+        func flipY(_ topY: CGFloat, _ height: CGFloat) -> CGFloat { H - topY - height }
+
+        let border = 2 * scale
+        let cardRadius = 16 * scale
+        let shadowOffset = 6 * scale
+        let lineX = 47 * scale
+        let cardX = 64 * scale
+        let captionStripH = 70 * scale
+        let topMargin = H * 0.12
+        let bottomMargin = H * 0.12
+
+        // Media area keeps the source aspect so the video isn't distorted.
+        let aspect = W / H
+        let availH = H - topMargin - bottomMargin - captionStripH - border * 2
+        let availW = W - cardX - 18 * scale - border * 2
+        var mediaH = availH
+        var mediaW = availH * aspect
+        if mediaW > availW {
+            mediaW = availW
+            mediaH = availW / aspect
+        }
+
+        let cardW = mediaW + border * 2
+        let cardH = border + mediaH + captionStripH + border
+        let cardTop = topMargin
+        let mediaX = cardX + border
+        let mediaTop = cardTop + border
+
         let parentLayer = CALayer()
-        let videoLayer = CALayer()
         parentLayer.frame = CGRect(origin: .zero, size: renderSize)
-        videoLayer.frame = parentLayer.frame
+        parentLayer.backgroundColor = paper.cgColor
+
+        // Dashed rail + purple dot
+        let railHeight = cardH + 32 * scale
+        let railImage = ReelOverlayRenderer.dashedLine(height: railHeight, width: 2 * scale, ink: ink)
+        parentLayer.addSublayer(imageLayer(
+            railImage,
+            origin: CGPoint(x: lineX - scale, y: flipY(cardTop - 16 * scale, railHeight))
+        ))
+
+        let dotDiameter = 14 * scale
+        let dotImage = ReelOverlayRenderer.dot(diameter: dotDiameter, fill: purple, ink: ink, border: border)
+        parentLayer.addSublayer(imageLayer(
+            dotImage,
+            origin: CGPoint(x: lineX - dotDiameter / 2, y: flipY(cardTop + 3 * scale, dotDiameter))
+        ))
+
+        // Card (white, ink border, hard shadow)
+        let cardImage = ReelOverlayRenderer.cardWithShadow(
+            size: CGSize(width: cardW, height: cardH),
+            radius: cardRadius,
+            border: border,
+            shadowOffset: shadowOffset,
+            ink: ink
+        )
+        parentLayer.addSublayer(imageLayer(
+            cardImage,
+            origin: CGPoint(x: cardX, y: flipY(cardTop, cardH + shadowOffset))
+        ))
+
+        // Video plays inside the card's media area.
+        let videoLayer = CALayer()
+        videoLayer.frame = CGRect(
+            x: mediaX,
+            y: flipY(mediaTop, mediaH),
+            width: mediaW,
+            height: mediaH
+        )
+        videoLayer.cornerRadius = max(cardRadius - border, 0)
+        videoLayer.masksToBounds = true
         parentLayer.addSublayer(videoLayer)
 
-        let scale = renderSize.width / 390
-        let margin = 20 * scale
-
-        let contentWidth = renderSize.width - margin * 2
-        // Social platforms overlay their own UI on the bottom ~25% and top
-        // ~10% of vertical video. Keep our overlays inside the safe zone:
-        // pill + caption sit at the top-left, just below the top margin.
-        // (Core Animation origin is bottom-left, so y is measured from bottom.)
-        let topSafeMargin = renderSize.height * 0.12
-
+        // Per-segment time label (left of the dot) and caption (card footer)
         for segment in segments {
-            let pillImage = ReelOverlayRenderer.pill(
-                "\(segment.moment.timeLabel) · \(segment.moment.placeName)",
-                fontSize: 13 * scale,
-                maxWidth: contentWidth,
-                ink: ink
+            let timeImage = ReelOverlayRenderer.plainText(
+                segment.moment.timeLabel,
+                fontSize: 12 * scale,
+                color: gray,
+                maxWidth: cardX
             )
-            let pillY = renderSize.height - topSafeMargin - pillImage.size.height
-            let pillLayer = imageLayer(pillImage, origin: CGPoint(x: margin, y: pillY))
-            setVisibility(pillLayer, start: segment.start, duration: segment.duration, totalSeconds: totalSeconds)
-            parentLayer.addSublayer(pillLayer)
-
-            let caption = segment.moment.caption
-            if !caption.isEmpty {
-                let captionImage = ReelOverlayRenderer.captionBox(
-                    caption,
-                    fontSize: 14 * scale,
-                    maxWidth: contentWidth,
-                    ink: ink
+            let timeLayer = imageLayer(
+                timeImage,
+                origin: CGPoint(
+                    x: lineX - 10 * scale - timeImage.size.width,
+                    y: flipY(cardTop + 10 * scale - timeImage.size.height / 2, timeImage.size.height)
                 )
-                let captionY = pillY - 10 * scale - captionImage.size.height
+            )
+            setVisibility(timeLayer, start: segment.start, duration: segment.duration, totalSeconds: totalSeconds)
+            parentLayer.addSublayer(timeLayer)
+
+            let caption = truncated(segment.moment.caption, limit: 110)
+            if !caption.isEmpty {
+                let captionImage = ReelOverlayRenderer.plainText(
+                    caption,
+                    fontSize: 13 * scale,
+                    color: ink,
+                    maxWidth: mediaW - 24 * scale,
+                    maxHeight: captionStripH - 16 * scale
+                )
                 let captionLayer = imageLayer(
                     captionImage,
-                    origin: CGPoint(x: margin, y: captionY)
+                    origin: CGPoint(
+                        x: mediaX + 12 * scale,
+                        y: flipY(mediaTop + mediaH + 8 * scale, captionImage.size.height)
+                    )
                 )
                 setVisibility(captionLayer, start: segment.start, duration: segment.duration, totalSeconds: totalSeconds)
                 parentLayer.addSublayer(captionLayer)
             }
         }
 
+        // Blog text floats over the media on a translucent ink panel.
         let trimmedBlog = blogText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedBlog.isEmpty {
-            let display = trimmedBlog.count > 220
-                ? String(trimmedBlog.prefix(220)) + "…"
-                : trimmedBlog
-            // Slightly narrower than the frame so platform side buttons
-            // (likes/comments on the right edge) don't cover the text.
+            let display = truncated(trimmedBlog, limit: 220)
             let blogImage = ReelOverlayRenderer.blogPanel(
                 display,
-                fontSize: 15 * scale,
-                maxWidth: renderSize.width * 0.78,
+                fontSize: 13 * scale,
+                maxWidth: mediaW * 0.85,
                 ink: ink
             )
-            let blogLayer = imageLayer(
+            parentLayer.addSublayer(imageLayer(
                 blogImage,
                 origin: CGPoint(
-                    x: (renderSize.width - blogImage.size.width) / 2,
-                    y: (renderSize.height - blogImage.size.height) / 2
+                    x: mediaX + (mediaW - blogImage.size.width) / 2,
+                    y: flipY(mediaTop + (mediaH - blogImage.size.height) / 2, blogImage.size.height)
                 )
-            )
-            parentLayer.addSublayer(blogLayer)
+            ))
         }
 
         videoComposition.animationTool = AVVideoCompositionCoreAnimationTool(
@@ -158,7 +227,13 @@ enum ReelComposer {
         return outputURL
     }
 
-    // MARK: - Layer helpers
+    // MARK: - Helpers
+
+    private static func truncated(_ text: String, limit: Int) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count > limit else { return trimmed }
+        return String(trimmed.prefix(limit)) + "…"
+    }
 
     private static func imageLayer(_ image: UIImage, origin: CGPoint) -> CALayer {
         let layer = CALayer()
@@ -202,110 +277,104 @@ enum ReelComposer {
 
 // MARK: - App-styled overlay rendering
 
-/// Draws overlay images in the app's neo-brutal style:
-/// white boxes with ink borders and ink text, plus a translucent ink
-/// panel with white text for the blog content.
+/// Draws the timeline-styled overlay images: paper-and-ink cards, dashed
+/// rail, purple dot, plain Chalkboard text, and the translucent blog panel.
 enum ReelOverlayRenderer {
     private static func font(_ size: CGFloat) -> UIFont {
         UIFont(name: "ChalkboardSE-Bold", size: size)
             ?? UIFont.boldSystemFont(ofSize: size)
     }
 
-    private static func lineWidth(_ fontSize: CGFloat) -> CGFloat {
-        max(fontSize * 0.14, 2)
-    }
-
-    /// Single-line white pill (ink border, ink text). Shrinks the font and
-    /// finally truncates so it always fits within maxWidth.
-    static func pill(_ text: String, fontSize: CGFloat, maxWidth: CGFloat, ink: UIColor) -> UIImage {
-        func textWidth(_ string: String, _ size: CGFloat) -> CGFloat {
-            (string as NSString).size(withAttributes: [.font: font(size)]).width
-        }
-
-        var size = fontSize
-        var display = text
-        let padH = fontSize * 0.9
-        let minSize = fontSize * 0.6
-
-        while textWidth(display, size) + padH * 2 > maxWidth && size > minSize {
-            size *= 0.93
-        }
-        if textWidth(display, size) + padH * 2 > maxWidth {
-            while display.count > 4,
-                  textWidth(display + "…", size) + padH * 2 > maxWidth {
-                display = String(display.dropLast())
-            }
-            display += "…"
-        }
-
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font(size),
-            .foregroundColor: ink
-        ]
-        let textSize = (display as NSString).size(withAttributes: attributes)
-        let padV = size * 0.5
-        let border = lineWidth(fontSize)
-        let imageSize = CGSize(
-            width: ceil(textSize.width) + padH * 2,
-            height: ceil(textSize.height) + padV * 2
-        )
-
+    /// White rounded card with ink border and hard offset shadow.
+    /// The image is (size + shadowOffset) large; the card sits at origin.
+    static func cardWithShadow(
+        size: CGSize,
+        radius: CGFloat,
+        border: CGFloat,
+        shadowOffset: CGFloat,
+        ink: UIColor
+    ) -> UIImage {
+        let imageSize = CGSize(width: size.width + shadowOffset, height: size.height + shadowOffset)
         let renderer = UIGraphicsImageRenderer(size: imageSize)
         return renderer.image { _ in
-            let rect = CGRect(origin: .zero, size: imageSize)
-                .insetBy(dx: border / 2 + 1, dy: border / 2 + 1)
-            let path = UIBezierPath(roundedRect: rect, cornerRadius: rect.height / 2)
+            let shadowRect = CGRect(
+                x: shadowOffset, y: shadowOffset,
+                width: size.width, height: size.height
+            )
+            ink.setFill()
+            UIBezierPath(roundedRect: shadowRect, cornerRadius: radius).fill()
+
+            let cardRect = CGRect(origin: .zero, size: size)
+                .insetBy(dx: border / 2, dy: border / 2)
+            let card = UIBezierPath(roundedRect: cardRect, cornerRadius: radius)
             UIColor.white.setFill()
+            card.fill()
+            ink.setStroke()
+            card.lineWidth = border
+            card.stroke()
+        }
+    }
+
+    static func dashedLine(height: CGFloat, width: CGFloat, ink: UIColor) -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: width, height: height))
+        return renderer.image { _ in
+            let path = UIBezierPath()
+            path.move(to: CGPoint(x: width / 2, y: 0))
+            path.addLine(to: CGPoint(x: width / 2, y: height))
+            path.lineWidth = width
+            path.setLineDash([width * 2.5, width * 2.5], count: 2, phase: 0)
+            ink.setStroke()
+            path.stroke()
+        }
+    }
+
+    static func dot(diameter: CGFloat, fill: UIColor, ink: UIColor, border: CGFloat) -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: diameter, height: diameter))
+        return renderer.image { _ in
+            let rect = CGRect(x: 0, y: 0, width: diameter, height: diameter)
+                .insetBy(dx: border / 2, dy: border / 2)
+            let path = UIBezierPath(ovalIn: rect)
+            fill.setFill()
             path.fill()
             ink.setStroke()
             path.lineWidth = border
             path.stroke()
-            (display as NSString).draw(
-                at: CGPoint(x: padH, y: padV),
-                withAttributes: attributes
-            )
         }
     }
 
-    /// Multiline white rounded box (ink border, ink text) — same look as the
-    /// info rows in the Edit screen. Text wraps within maxWidth.
-    static func captionBox(_ text: String, fontSize: CGFloat, maxWidth: CGFloat, ink: UIColor) -> UIImage {
+    /// Plain wrapped text; height optionally capped (pre-truncate the string
+    /// so the cap doesn't cut mid-line in normal cases).
+    static func plainText(
+        _ text: String,
+        fontSize: CGFloat,
+        color: UIColor,
+        maxWidth: CGFloat,
+        maxHeight: CGFloat? = nil
+    ) -> UIImage {
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .left
         paragraph.lineSpacing = fontSize * 0.2
 
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font(fontSize),
-            .foregroundColor: ink,
+            .foregroundColor: color,
             .paragraphStyle: paragraph
         ]
-        let padding = fontSize * 0.7
-        let border = lineWidth(fontSize)
-        let textMaxWidth = maxWidth - padding * 2
         let bounding = (text as NSString).boundingRect(
-            with: CGSize(width: textMaxWidth, height: .greatestFiniteMagnitude),
+            with: CGSize(width: maxWidth, height: .greatestFiniteMagnitude),
             options: [.usesLineFragmentOrigin],
             attributes: attributes,
             context: nil
         )
-        let textSize = CGSize(width: ceil(bounding.width), height: ceil(bounding.height))
-        let imageSize = CGSize(
-            width: textSize.width + padding * 2,
-            height: textSize.height + padding * 2
-        )
+        var size = CGSize(width: ceil(bounding.width), height: ceil(bounding.height))
+        if let maxHeight {
+            size.height = min(size.height, maxHeight)
+        }
 
-        let renderer = UIGraphicsImageRenderer(size: imageSize)
+        let renderer = UIGraphicsImageRenderer(size: size)
         return renderer.image { _ in
-            let rect = CGRect(origin: .zero, size: imageSize)
-                .insetBy(dx: border / 2 + 1, dy: border / 2 + 1)
-            let path = UIBezierPath(roundedRect: rect, cornerRadius: fontSize * 0.8)
-            UIColor.white.setFill()
-            path.fill()
-            ink.setStroke()
-            path.lineWidth = border
-            path.stroke()
             (text as NSString).draw(
-                with: CGRect(origin: CGPoint(x: padding, y: padding), size: textSize),
+                with: CGRect(origin: .zero, size: size),
                 options: [.usesLineFragmentOrigin],
                 attributes: attributes,
                 context: nil
@@ -314,8 +383,7 @@ enum ReelOverlayRenderer {
     }
 
     /// Centered blog text on a translucent ink panel with a white border —
-    /// readable over any footage without fully hiding it (same style as the
-    /// camera screen's timer pill).
+    /// readable over the footage without fully hiding it.
     static func blogPanel(_ text: String, fontSize: CGFloat, maxWidth: CGFloat, ink: UIColor) -> UIImage {
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .center
@@ -327,7 +395,7 @@ enum ReelOverlayRenderer {
             .paragraphStyle: paragraph
         ]
         let padding = fontSize * 0.9
-        let border = lineWidth(fontSize)
+        let border = max(fontSize * 0.14, 2)
         let textMaxWidth = maxWidth - padding * 2
         let bounding = (text as NSString).boundingRect(
             with: CGSize(width: textMaxWidth, height: .greatestFiniteMagnitude),

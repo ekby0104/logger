@@ -35,9 +35,11 @@ python3 -m http.server 8000
 - `style.css` — design tokens and all component styles
 - `app.js` — state, actions, and view rendering (vanilla JS)
 
-## iOS App (planning)
+## iOS App
 
-네이티브 iPhone 앱 개발을 위한 설계 문서:
+**[`ios/`](ios/)** — SwiftUI 네이티브 앱 (Xcode 16+, iOS 17+). 실행 방법은 [`ios/README.md`](ios/README.md) 참고.
+
+설계 문서:
 
 - [`docs/01-화면분석-설계.md`](docs/01-화면분석-설계.md) — 화면 구조·컴포넌트·데이터 모델 분석
 - [`docs/02-기술스택.md`](docs/02-기술스택.md) — Swift 6 / SwiftUI / SwiftData / AVFoundation / Foundation Models 스택 선정

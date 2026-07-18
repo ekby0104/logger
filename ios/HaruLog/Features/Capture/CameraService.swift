@@ -1,10 +1,13 @@
 import AVFoundation
 import Foundation
+import os
 
 /// Thin AVFoundation wrapper: session lifecycle, segment recording, camera flip.
 /// All callbacks are delivered on the main queue.
 final class CameraService: NSObject, AVCaptureFileOutputRecordingDelegate {
     let session = AVCaptureSession()
+
+    private let log = Logger(subsystem: "com.harulog.app", category: "camera")
 
     var onReady: (() -> Void)?
     var onUnavailable: (() -> Void)?
@@ -20,15 +23,35 @@ final class CameraService: NSObject, AVCaptureFileOutputRecordingDelegate {
     // MARK: - Lifecycle
 
     func start() {
-        AVCaptureDevice.requestAccess(for: .video) { [weak self] videoGranted in
-            guard let self else { return }
-            guard videoGranted else {
-                DispatchQueue.main.async { self.onPermissionDenied?() }
-                return
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+        log.info("start() — video auth status: \(status.rawValue)")
+
+        switch status {
+        case .authorized:
+            requestAudioThenConfigure()
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
+                guard let self else { return }
+                self.log.info("video permission response: \(granted)")
+                if granted {
+                    self.requestAudioThenConfigure()
+                } else {
+                    DispatchQueue.main.async { self.onPermissionDenied?() }
+                }
             }
-            AVCaptureDevice.requestAccess(for: .audio) { _ in
+        default: // .denied, .restricted
+            DispatchQueue.main.async { self.onPermissionDenied?() }
+        }
+    }
+
+    private func requestAudioThenConfigure() {
+        if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
+            AVCaptureDevice.requestAccess(for: .audio) { [weak self] _ in
+                guard let self else { return }
                 self.sessionQueue.async { self.configureAndRun() }
             }
+        } else {
+            sessionQueue.async { [weak self] in self?.configureAndRun() }
         }
     }
 
@@ -66,10 +89,12 @@ final class CameraService: NSObject, AVCaptureFileOutputRecordingDelegate {
 
         guard videoInput != nil else {
             // Simulator or no camera hardware — UI falls back to mock recording.
+            log.warning("no video input available — falling back to mock recording")
             DispatchQueue.main.async { self.onUnavailable?() }
             return
         }
         if !session.isRunning { session.startRunning() }
+        log.info("session running: \(self.session.isRunning)")
         DispatchQueue.main.async { self.onReady?() }
     }
 

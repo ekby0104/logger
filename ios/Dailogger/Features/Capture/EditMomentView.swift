@@ -6,6 +6,8 @@ struct EditMomentView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.modelContext) private var context
     @State private var showDeleteConfirm = false
+    /// Local state so typing doesn't route through the app-wide model on every keystroke.
+    @State private var caption = ""
 
     private let moodColumns = [GridItem(.adaptive(minimum: 92), spacing: 8)]
 
@@ -32,8 +34,6 @@ struct EditMomentView: View {
     }
 
     var body: some View {
-        @Bindable var model = model
-
         VStack(spacing: 0) {
             header
 
@@ -78,7 +78,7 @@ struct EditMomentView: View {
                     sectionLabel("Caption")
                     TextField(
                         "Write a line about this moment",
-                        text: $model.draftCaption,
+                        text: $caption,
                         axis: .vertical
                     )
                     .font(.hlRegular(14.5))
@@ -113,6 +113,7 @@ struct EditMomentView: View {
                         systemImage: "checkmark",
                         height: 54
                     ) {
+                        model.draftCaption = caption
                         model.saveMoment(context: context)
                     }
                     .disabled(model.isMerging)
@@ -163,6 +164,7 @@ struct EditMomentView: View {
             .scrollIndicators(.hidden)
         }
         .background(HL.paper.ignoresSafeArea())
+        .onAppear { caption = model.draftCaption }
     }
 
     private var header: some View {

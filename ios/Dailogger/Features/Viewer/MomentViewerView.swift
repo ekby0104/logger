@@ -1,4 +1,4 @@
-import AVKit
+import AVFoundation
 import SwiftUI
 import SwiftData
 import UIKit
@@ -12,18 +12,12 @@ struct MomentViewerView: View {
     @Environment(AppModel.self) private var model
     @Query(sort: \Moment.createdAt) private var moments: [Moment]
     @State private var player: AVPlayer?
-    @State private var progress: Double = 0
     @State private var isPaused = false
     @State private var pressStartDate: Date?
     @State private var pauseTask: Task<Void, Never>?
 
     /// A touch shorter than this is a navigation tap; longer is a hold-to-pause.
     private let holdThreshold = 0.25
-
-    /// Display time for moments that have no recorded clip (seed/mock data).
-    private let mockDurationSeconds = 5.0
-
-    private let ticker = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
 
     private var current: Moment? {
         model.viewerMoment ?? moments.first
@@ -39,8 +33,7 @@ struct MomentViewerView: View {
             HL.camBackground.ignoresSafeArea()
 
             if let player {
-                VideoPlayer(player: player)
-                    .disabled(true)
+                PlayerLayerView(player: player)
                     .ignoresSafeArea()
             }
 
@@ -75,7 +68,16 @@ struct MomentViewerView: View {
             }
 
             VStack(alignment: .leading, spacing: 0) {
-                progressBars
+                // Progress ticking lives in its own small view so the 10Hz
+                // updates never re-render this whole screen.
+                ViewerProgressBars(
+                    count: moments.count,
+                    currentIndex: currentIndex,
+                    player: player,
+                    isPaused: isPaused,
+                    momentID: current?.id,
+                    onMockFinished: { step(1) }
+                )
 
                 HStack {
                     Spacer()
@@ -112,7 +114,6 @@ struct MomentViewerView: View {
             pauseTask?.cancel()
             tearDownPlayer()
         }
-        .onReceive(ticker) { _ in tick() }
         .onReceive(
             NotificationCenter.default.publisher(for: AVPlayerItem.didPlayToEndTimeNotification)
         ) { notification in
@@ -155,21 +156,6 @@ struct MomentViewerView: View {
 
     // MARK: - Playback driving
 
-    private func tick() {
-        guard !isPaused else { return }
-        if let player, let item = player.currentItem {
-            let duration = item.duration.seconds
-            if duration.isFinite && duration > 0 {
-                progress = min(player.currentTime().seconds / duration, 1)
-            }
-        } else {
-            progress += 0.05 / mockDurationSeconds
-            if progress >= 1 {
-                step(1)
-            }
-        }
-    }
-
     private func setPaused(_ paused: Bool) {
         isPaused = paused
         if paused {
@@ -182,7 +168,6 @@ struct MomentViewerView: View {
     /// Reuses a single AVPlayer and swaps its item, so the previous clip's
     /// audio stops the moment the viewer moves to another moment.
     private func updatePlayer() {
-        progress = 0
         isPaused = false
         guard let url = current?.videoURL else {
             tearDownPlayer()
@@ -206,7 +191,6 @@ struct MomentViewerView: View {
     }
 
     private func step(_ direction: Int) {
-        progress = 0
         let next = currentIndex + direction
         guard moments.indices.contains(next) else {
             if next >= moments.count { model.closeViewer() }
@@ -216,30 +200,6 @@ struct MomentViewerView: View {
     }
 
     // MARK: - UI pieces
-
-    private var progressBars: some View {
-        HStack(spacing: 4) {
-            ForEach(moments.indices, id: \.self) { index in
-                GeometryReader { geometry in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(.white.opacity(0.3))
-                        Capsule().fill(.white)
-                            .frame(width: geometry.size.width * fillFraction(for: index))
-                    }
-                }
-                .frame(height: 7)
-                .overlay {
-                    Capsule().strokeBorder(HL.ink, lineWidth: 1.5)
-                }
-            }
-        }
-    }
-
-    private func fillFraction(for index: Int) -> CGFloat {
-        if index < currentIndex { return 1 }
-        if index == currentIndex { return CGFloat(min(max(progress, 0), 1)) }
-        return 0
-    }
 
     private func info(_ moment: Moment) -> some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -297,6 +257,94 @@ struct MomentViewerView: View {
                     }
                 }
                 .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+// MARK: - Lightweight video view (no AVPlayerViewController overhead)
+
+private struct PlayerLayerView: UIViewRepresentable {
+    let player: AVPlayer
+
+    final class PlayerUIView: UIView {
+        override class var layerClass: AnyClass {
+            AVPlayerLayer.self
+        }
+
+        var playerLayer: AVPlayerLayer {
+            layer as! AVPlayerLayer
+        }
+    }
+
+    func makeUIView(context: Context) -> PlayerUIView {
+        let view = PlayerUIView()
+        view.playerLayer.player = player
+        view.playerLayer.videoGravity = .resizeAspectFill
+        return view
+    }
+
+    func updateUIView(_ uiView: PlayerUIView, context: Context) {
+        if uiView.playerLayer.player !== player {
+            uiView.playerLayer.player = player
+        }
+    }
+}
+
+// MARK: - Progress bars (isolated so ticking never re-renders the screen)
+
+private struct ViewerProgressBars: View {
+    let count: Int
+    let currentIndex: Int
+    let player: AVPlayer?
+    let isPaused: Bool
+    let momentID: UUID?
+    var onMockFinished: () -> Void
+
+    @State private var progress: Double = 0
+
+    /// Display time for moments that have no recorded clip.
+    private let mockDurationSeconds = 5.0
+    private let ticker = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<count, id: \.self) { index in
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(.white.opacity(0.3))
+                        Capsule().fill(.white)
+                            .frame(width: geometry.size.width * fillFraction(for: index))
+                    }
+                }
+                .frame(height: 7)
+                .overlay {
+                    Capsule().strokeBorder(HL.ink, lineWidth: 1.5)
+                }
+            }
+        }
+        .onReceive(ticker) { _ in tick() }
+        .onChange(of: momentID) { progress = 0 }
+    }
+
+    private func fillFraction(for index: Int) -> CGFloat {
+        if index < currentIndex { return 1 }
+        if index == currentIndex { return CGFloat(min(max(progress, 0), 1)) }
+        return 0
+    }
+
+    private func tick() {
+        guard !isPaused else { return }
+        if let player, let item = player.currentItem {
+            let duration = item.duration.seconds
+            if duration.isFinite && duration > 0 {
+                progress = min(player.currentTime().seconds / duration, 1)
+            }
+        } else {
+            progress += 0.1 / mockDurationSeconds
+            if progress >= 1 {
+                progress = 0
+                onMockFinished()
             }
         }
     }

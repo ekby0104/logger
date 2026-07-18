@@ -138,7 +138,7 @@ enum ReelComposer {
         let lineX = 47 * scale
         let cardMinX = 56 * scale
         let rightMargin = 14 * scale
-        let captionStripH = 64 * scale
+        let captionStripH = 72 * scale
         let topMargin = H * 0.08
         let bottomMargin = H * 0.09
 
@@ -229,21 +229,43 @@ enum ReelComposer {
             setVisibility(timeLayer, start: segment.start, duration: segment.duration, totalSeconds: totalSeconds)
             parentLayer.addSublayer(timeLayer)
 
-            let caption = truncated(segment.moment.caption, limit: 110)
-            if !caption.isEmpty {
+            // Card footer: place on the first line (gray), caption below (ink).
+            let stripTop = mediaTop + mediaH
+            var cursorY = stripTop + 7 * scale
+            let textX = mediaX + 12 * scale
+            let textMaxWidth = mediaW - 24 * scale
+
+            let place = truncated(segment.moment.placeName, limit: 40)
+            if !place.isEmpty {
+                let placeImage = ReelOverlayRenderer.plainText(
+                    place,
+                    fontSize: 11 * scale,
+                    color: gray,
+                    maxWidth: textMaxWidth,
+                    maxHeight: 16 * scale
+                )
+                let placeLayer = imageLayer(
+                    placeImage,
+                    origin: CGPoint(x: textX, y: flipY(cursorY, placeImage.size.height))
+                )
+                setVisibility(placeLayer, start: segment.start, duration: segment.duration, totalSeconds: totalSeconds)
+                parentLayer.addSublayer(placeLayer)
+                cursorY += placeImage.size.height + 4 * scale
+            }
+
+            let caption = truncated(segment.moment.caption, limit: 90)
+            let captionMaxHeight = stripTop + captionStripH - cursorY - 6 * scale
+            if !caption.isEmpty && captionMaxHeight > 12 * scale {
                 let captionImage = ReelOverlayRenderer.plainText(
                     caption,
                     fontSize: 13 * scale,
                     color: ink,
-                    maxWidth: mediaW - 24 * scale,
-                    maxHeight: captionStripH - 16 * scale
+                    maxWidth: textMaxWidth,
+                    maxHeight: captionMaxHeight
                 )
                 let captionLayer = imageLayer(
                     captionImage,
-                    origin: CGPoint(
-                        x: mediaX + 12 * scale,
-                        y: flipY(mediaTop + mediaH + 8 * scale, captionImage.size.height)
-                    )
+                    origin: CGPoint(x: textX, y: flipY(cursorY, captionImage.size.height))
                 )
                 setVisibility(captionLayer, start: segment.start, duration: segment.duration, totalSeconds: totalSeconds)
                 parentLayer.addSublayer(captionLayer)

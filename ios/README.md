@@ -56,7 +56,7 @@ open HaruLog.xcodeproj
 ## TestFlight 배포 절차
 
 1. **App Store Connect에서 앱 등록** (최초 1회): [appstoreconnect.apple.com](https://appstoreconnect.apple.com) → 앱 → ＋ → 신규 앱
-   - 플랫폼 iOS, 이름 `하루로그`(또는 HaruLog), 번들 ID `com.harulog.app`(Xcode에서 Team 선택 시 자동 등록됨), SKU는 아무 문자열
+   - 플랫폼 iOS, 이름 `하루로그`(또는 HaruLog), 번들 ID `com.ekby0104.harulog`(Xcode에서 Team 선택 시 자동 등록됨), SKU는 아무 문자열
 2. Xcode: Signing & Capabilities → **Team 선택** 확인
 3. 상단 기기 선택을 **Any iOS Device (arm64)** 로 변경
 4. 메뉴 **Product → Archive**

@@ -5,6 +5,8 @@ import SwiftData
 struct DailyBlogView: View {
     @Environment(AppModel.self) private var model
     @Query(sort: \Moment.createdAt) private var moments: [Moment]
+    @State private var reelURL: URL?
+    @State private var isMakingReel = false
 
     private var dateLabel: String {
         model.blogDate.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
@@ -18,6 +20,10 @@ struct DailyBlogView: View {
 
     private var shareText: String {
         "\(model.blogTitle)\n\n\(model.blogBody)\n\n" + String(localized: "— Dailogger, \(dateLabel)")
+    }
+
+    private var clipURLs: [URL] {
+        dayMoments.compactMap(\.videoURL)
     }
 
     var body: some View {
@@ -86,6 +92,9 @@ struct DailyBlogView: View {
                             }
                         }
                         .scrollIndicators(.hidden)
+
+                        reelSection
+                            .padding(.top, 24)
                     }
                 }
                 .padding(18)
@@ -94,6 +103,57 @@ struct DailyBlogView: View {
             .scrollIndicators(.hidden)
         }
         .background(HL.paper.ignoresSafeArea())
+        .overlay(alignment: .bottom) {
+            ToastView()
+        }
+    }
+
+    /// Merges the day's clips into a single video and offers it for sharing.
+    @ViewBuilder
+    private var reelSection: some View {
+        if !clipURLs.isEmpty {
+            if let reelURL {
+                ShareLink(item: reelURL) {
+                    HStack(spacing: 7) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 16, weight: .bold))
+                        Text("Share reel video")
+                            .font(.hl(16))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                }
+                .buttonStyle(.plain)
+                .hardCard(fill: HL.purple, radius: 12, shadowOffset: 4)
+            } else {
+                PrimaryButton(
+                    title: isMakingReel
+                        ? String(localized: "Making the reel…")
+                        : String(localized: "Create reel video"),
+                    systemImage: isMakingReel ? "hourglass" : "film",
+                    height: 50
+                ) {
+                    makeReel()
+                }
+                .disabled(isMakingReel)
+                .opacity(isMakingReel ? 0.7 : 1)
+            }
+        }
+    }
+
+    private func makeReel() {
+        guard !isMakingReel else { return }
+        isMakingReel = true
+        let urls = clipURLs
+        Task { @MainActor in
+            do {
+                reelURL = try await VideoComposer.merge(segmentURLs: urls)
+            } catch {
+                model.flashToast(String(localized: "Couldn't make the reel"))
+            }
+            isMakingReel = false
+        }
     }
 
     private var header: some View {

@@ -238,6 +238,21 @@ final class AppModel {
         flashToast(String(localized: "Saved to your timeline"))
     }
 
+    func deleteMoment(_ moment: Moment, context: ModelContext) {
+        MediaStore.deleteFile(named: moment.videoFileName)
+        MediaStore.deleteFile(named: moment.thumbnailFileName)
+        if viewerMoment?.id == moment.id {
+            viewerMoment = nil
+            if overlay == .viewer { overlay = nil }
+        }
+        if editingMoment?.id == moment.id {
+            editingMoment = nil
+            if overlay == .edit { overlay = nil }
+        }
+        context.delete(moment)
+        flashToast(String(localized: "Moment deleted"))
+    }
+
     func makeBlog(moments: [Moment], context: ModelContext) {
         guard !moments.isEmpty else {
             flashToast(String(localized: "Record a moment first"))

@@ -33,6 +33,11 @@ enum MediaStore {
         }
     }
 
+    static func deleteFile(named fileName: String?) {
+        guard let fileName, !fileName.isEmpty else { return }
+        try? FileManager.default.removeItem(at: momentsDirectory.appendingPathComponent(fileName))
+    }
+
     static func url(fileName: String?) -> URL? {
         guard let fileName, !fileName.isEmpty else { return nil }
         let url = momentsDirectory.appendingPathComponent(fileName)

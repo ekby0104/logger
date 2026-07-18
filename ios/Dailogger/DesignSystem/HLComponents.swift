@@ -82,6 +82,32 @@ struct MomentThumb: View {
     }
 }
 
+// MARK: - Empty state
+
+struct EmptyMomentsCard: View {
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "video.badge.plus")
+                .font(.system(size: 34, weight: .semibold))
+                .foregroundStyle(HL.muted)
+            Text("No moments yet today")
+                .font(.hl(15))
+                .foregroundStyle(HL.ink)
+            Text("Tap the record button below to capture your first moment.")
+                .font(.hlRegular(13))
+                .foregroundStyle(HL.gray)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 36)
+        .padding(.horizontal, 20)
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(HL.muted, style: StrokeStyle(lineWidth: 2, dash: [6, 6]))
+        }
+    }
+}
+
 // MARK: - Pills & badges
 
 struct MoodPill: View {

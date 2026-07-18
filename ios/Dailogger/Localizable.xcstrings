@@ -195,6 +195,57 @@
     },
     "%@ — a %@ day" : {
       "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "%@ — %@한 하루" } } }
+    },
+    "Delete" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "삭제" } } }
+    },
+    "Delete moment" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "모먼트 삭제" } } }
+    },
+    "Moment deleted" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "모먼트를 삭제했어요" } } }
+    },
+    "Delete this moment?" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "이 모먼트를 삭제할까요?" } } }
+    },
+    "This removes the clip and its thumbnail." : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "클립과 썸네일이 함께 삭제돼요." } } }
+    },
+    "Edit profile" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "프로필 편집" } } }
+    },
+    "Name" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "이름" } } }
+    },
+    "Handle" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "핸들" } } }
+    },
+    "Save" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "저장" } } }
+    },
+    "My Days" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "나의 하루" } } }
+    },
+    "No moments yet today" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "아직 오늘의 모먼트가 없어요" } } }
+    },
+    "Tap the record button below to capture your first moment." : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "아래 녹화 버튼을 눌러 첫 순간을 담아보세요." } } }
+    },
+    "Your daily blogs will appear here." : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "데일리 블로그가 여기에 쌓여요." } } }
+    },
+    "Create reel video" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "릴 영상 만들기" } } }
+    },
+    "Making the reel…" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "릴 영상 만드는 중…" } } }
+    },
+    "Share reel video" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "릴 영상 공유하기" } } }
+    },
+    "Couldn't make the reel" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "릴 영상을 만들지 못했어요" } } }
     }
   },
   "version" : "1.0"

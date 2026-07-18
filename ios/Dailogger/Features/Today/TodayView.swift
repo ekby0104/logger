@@ -31,8 +31,12 @@ struct TodayView: View {
                         .font(.hl(16))
                         .foregroundStyle(HL.ink)
 
-                    ForEach(moments) { moment in
-                        MomentRow(moment: moment)
+                    if moments.isEmpty {
+                        EmptyMomentsCard()
+                    } else {
+                        ForEach(moments) { moment in
+                            MomentRow(moment: moment)
+                        }
                     }
                 }
             }
@@ -109,6 +113,7 @@ struct TodayView: View {
 
 struct MomentRow: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.modelContext) private var context
     let moment: Moment
 
     var body: some View {
@@ -154,5 +159,12 @@ struct MomentRow: View {
         }
         .buttonStyle(.plain)
         .hardCard(radius: 16, shadowOffset: 3)
+        .contextMenu {
+            Button(role: .destructive) {
+                model.deleteMoment(moment, context: context)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
     }
 }

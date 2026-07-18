@@ -5,6 +5,7 @@ import UIKit
 struct EditMomentView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.modelContext) private var context
+    @State private var showDeleteConfirm = false
 
     private let moodColumns = [GridItem(.adaptive(minimum: 92), spacing: 8)]
 
@@ -117,6 +118,44 @@ struct EditMomentView: View {
                     .disabled(model.isMerging)
                     .opacity(model.isMerging ? 0.6 : 1)
                     .padding(.top, 24)
+
+                    if model.editingMoment != nil {
+                        Button {
+                            showDeleteConfirm = true
+                        } label: {
+                            HStack(spacing: 7) {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 14, weight: .bold))
+                                Text("Delete moment")
+                                    .font(.hl(15))
+                            }
+                            .foregroundStyle(HL.red)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background {
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(.white)
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .strokeBorder(HL.ink, lineWidth: 2)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 12)
+                        .confirmationDialog(
+                            "Delete this moment?",
+                            isPresented: $showDeleteConfirm,
+                            titleVisibility: .visible
+                        ) {
+                            Button("Delete", role: .destructive) {
+                                if let moment = model.editingMoment {
+                                    model.deleteMoment(moment, context: context)
+                                }
+                            }
+                            Button("Cancel", role: .cancel) {}
+                        } message: {
+                            Text("This removes the clip and its thumbnail.")
+                        }
+                    }
                 }
                 .padding(18)
                 .padding(.bottom, 40)

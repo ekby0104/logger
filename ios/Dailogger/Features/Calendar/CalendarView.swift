@@ -5,38 +5,58 @@ struct CalendarView: View {
     @Environment(AppModel.self) private var model
     @Query(sort: \DailyLog.date) private var logs: [DailyLog]
     @Query(sort: \Moment.createdAt) private var moments: [Moment]
+    @State private var monthOffset = 0
     @State private var selectedDay = Calendar.current.component(.day, from: .now)
 
     private var calendar: Calendar { Calendar.current }
 
-    private var monthTitle: String {
-        Date.now.formatted(.dateTime.year().month(.wide))
+    private var displayedMonth: Date {
+        let components = calendar.dateComponents([.year, .month], from: .now)
+        let start = calendar.date(from: components) ?? .now
+        return calendar.date(byAdding: .month, value: monthOffset, to: start) ?? start
     }
 
-    private var selectedDate: Date {
-        let components = calendar.dateComponents([.year, .month], from: .now)
-        let dayComponents = DateComponents(
-            year: components.year, month: components.month, day: selectedDay
-        )
-        return calendar.date(from: dayComponents) ?? .now
+    private var isCurrentMonth: Bool { monthOffset == 0 }
+
+    private var monthTitle: String {
+        displayedMonth.formatted(.dateTime.year().month(.wide))
     }
 
     private var daysInMonth: Int {
-        calendar.range(of: .day, in: .month, for: .now)?.count ?? 30
+        calendar.range(of: .day, in: .month, for: displayedMonth)?.count ?? 30
     }
 
     private var leadingBlanks: Int {
-        let components = calendar.dateComponents([.year, .month], from: .now)
-        let firstOfMonth = calendar.date(from: components) ?? .now
-        return calendar.component(.weekday, from: firstOfMonth) - 1
+        calendar.component(.weekday, from: displayedMonth) - 1
     }
 
     private var blogDays: Set<Int> {
-        Set(logs.map { calendar.component(.day, from: $0.date) })
+        Set(
+            logs.filter {
+                calendar.isDate($0.date, equalTo: displayedMonth, toGranularity: .month)
+            }
+            .map { calendar.component(.day, from: $0.date) }
+        )
     }
 
     private var todayDay: Int {
         calendar.component(.day, from: .now)
+    }
+
+    private var selectedDate: Date {
+        let components = calendar.dateComponents([.year, .month], from: displayedMonth)
+        let dayComponents = DateComponents(
+            year: components.year, month: components.month, day: selectedDay
+        )
+        return calendar.date(from: dayComponents) ?? displayedMonth
+    }
+
+    private var selectedLog: DailyLog? {
+        logs.first { calendar.isDate($0.date, inSameDayAs: selectedDate) }
+    }
+
+    private var selectedDayMoments: [Moment] {
+        moments.filter { calendar.isDate($0.createdAt, inSameDayAs: selectedDate) }
     }
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
@@ -44,13 +64,7 @@ struct CalendarView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text(monthTitle)
-                    .font(.hl(27))
-                    .foregroundStyle(HL.ink)
-                Text("You logged \(blogDays.count) days this month")
-                    .font(.hlRegular(13))
-                    .foregroundStyle(HL.gray)
-                    .padding(.top, 3)
+                header
                     .padding(.bottom, 20)
 
                 LazyVGrid(columns: columns, spacing: 2) {
@@ -83,9 +97,59 @@ struct CalendarView: View {
         .scrollIndicators(.hidden)
     }
 
+    private var header: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(monthTitle)
+                    .font(.hl(27))
+                    .foregroundStyle(HL.ink)
+                Text("You logged \(blogDays.count) days this month")
+                    .font(.hlRegular(13))
+                    .foregroundStyle(HL.gray)
+            }
+
+            Spacer()
+
+            HStack(spacing: 10) {
+                monthNavButton(systemImage: "chevron.left", disabled: false) {
+                    changeMonth(by: -1)
+                }
+                monthNavButton(systemImage: "chevron.right", disabled: isCurrentMonth) {
+                    changeMonth(by: 1)
+                }
+            }
+        }
+    }
+
+    private func monthNavButton(
+        systemImage: String,
+        disabled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(disabled ? HL.muted : HL.ink)
+                .frame(width: 34, height: 34)
+        }
+        .buttonStyle(.plain)
+        .hardCard(radius: 10, shadowOffset: 3)
+        .disabled(disabled)
+    }
+
+    private func changeMonth(by delta: Int) {
+        guard monthOffset + delta <= 0 else { return }
+        monthOffset += delta
+        if isCurrentMonth {
+            selectedDay = todayDay
+        } else {
+            selectedDay = blogDays.min() ?? 1
+        }
+    }
+
     private func dayCell(_ day: Int) -> some View {
         let hasBlog = blogDays.contains(day)
-        let isToday = day == todayDay
+        let isToday = isCurrentMonth && day == todayDay
         let isSelected = day == selectedDay
 
         return Button {
@@ -114,17 +178,6 @@ struct CalendarView: View {
             .aspectRatio(0.78, contentMode: .fit)
         }
         .buttonStyle(.plain)
-    }
-
-    private var selectedLog: DailyLog? {
-        logs.first { calendar.component(.day, from: $0.date) == selectedDay }
-    }
-
-    private var selectedDayMoments: [Moment] {
-        moments.filter {
-            calendar.component(.day, from: $0.createdAt) == selectedDay
-                && calendar.isDate($0.createdAt, equalTo: .now, toGranularity: .month)
-        }
     }
 
     private var detailCard: some View {

@@ -7,6 +7,9 @@ struct ProfileView: View {
     @Query(sort: \DailyLog.date, order: .reverse) private var logs: [DailyLog]
     @Query private var moments: [Moment]
     @State private var showSettings = false
+    @State private var showEditProfile = false
+    @AppStorage("profileName") private var profileName = ""
+    @AppStorage("profileHandle") private var profileHandle = ""
 
     private let archiveColumns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 3)
 
@@ -38,9 +41,17 @@ struct ProfileView: View {
                 }
                 .padding(.bottom, 12)
 
-                LazyVGrid(columns: archiveColumns, spacing: 8) {
-                    ForEach(logs) { log in
-                        archiveCell(log)
+                if logs.isEmpty {
+                    Text("Your daily blogs will appear here.")
+                        .font(.hlRegular(13))
+                        .foregroundStyle(HL.gray)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 28)
+                } else {
+                    LazyVGrid(columns: archiveColumns, spacing: 8) {
+                        ForEach(logs) { log in
+                            archiveCell(log)
+                        }
                     }
                 }
             }
@@ -69,10 +80,10 @@ struct ProfileView: View {
                 }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Jiwoo's Days")
+                Text(profileName.isEmpty ? String(localized: "My Days") : profileName)
                     .font(.hl(19))
                     .foregroundStyle(HL.ink)
-                Text("@jiwoo.daily")
+                Text(profileHandle.isEmpty ? "@my.daily" : profileHandle)
                     .font(.hlRegular(13))
                     .foregroundStyle(HL.gray)
             }
@@ -90,6 +101,9 @@ struct ProfileView: View {
             .buttonStyle(.plain)
             .hardCard(radius: 12, shadowOffset: 3)
             .confirmationDialog("Settings", isPresented: $showSettings) {
+                Button("Edit profile") {
+                    showEditProfile = true
+                }
                 Button("Remove sample data", role: .destructive) {
                     removeSampleData()
                 }
@@ -97,22 +111,11 @@ struct ProfileView: View {
             } message: {
                 Text("Removes the demo moments (no video) and past demo days. Your real recordings and blogs stay.")
             }
+            .sheet(isPresented: $showEditProfile) {
+                ProfileEditSheet()
+                    .presentationDetents([.height(340)])
+            }
         }
-    }
-
-    /// Deletes seeded demo content: moments without a recorded clip and
-    /// past days that never got a blog. Real recordings are untouched.
-    private func removeSampleData() {
-        let calendar = Calendar.current
-        let todayStart = calendar.startOfDay(for: .now)
-        for moment in moments where moment.videoFileName == nil {
-            context.delete(moment)
-        }
-        for log in logs where log.blogText == nil && log.date < todayStart {
-            context.delete(log)
-        }
-        UserDefaults.standard.set(true, forKey: SeedData.samplesRemovedKey)
-        model.flashToast(String(localized: "Sample data removed"))
     }
 
     private var statsCard: some View {
@@ -163,33 +166,113 @@ struct ProfileView: View {
             }
         }
         .aspectRatio(9.0 / 16.0, contentMode: .fit)
-            .overlay(alignment: .bottomLeading) {
-                Text(log.dayLabel)
-                    .font(.hl(12))
-                    .foregroundStyle(HL.ink)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background {
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .fill(.white)
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .strokeBorder(HL.ink, lineWidth: 1.5)
-                    }
-                    .padding(6)
+        .overlay(alignment: .bottomLeading) {
+            Text(log.dayLabel)
+                .font(.hl(12))
+                .foregroundStyle(HL.ink)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(.white)
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .strokeBorder(HL.ink, lineWidth: 1.5)
+                }
+                .padding(6)
+        }
+        .overlay(alignment: .topTrailing) {
+            Text("\(log.clipCount) clips")
+                .font(.hl(10))
+                .foregroundStyle(HL.ink)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 1)
+                .background {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(.white)
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .strokeBorder(HL.ink, lineWidth: 1.5)
+                }
+                .padding(6)
+        }
+    }
+
+    /// Deletes seeded demo content: moments without a recorded clip and
+    /// past days that never got a blog. Real recordings are untouched.
+    private func removeSampleData() {
+        let calendar = Calendar.current
+        let todayStart = calendar.startOfDay(for: .now)
+        for moment in moments where moment.videoFileName == nil {
+            context.delete(moment)
+        }
+        for log in logs where log.blogText == nil && log.date < todayStart {
+            context.delete(log)
+        }
+        UserDefaults.standard.set(true, forKey: SeedData.samplesRemovedKey)
+        model.flashToast(String(localized: "Sample data removed"))
+    }
+}
+
+// MARK: - Profile edit sheet
+
+private struct ProfileEditSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage("profileName") private var profileName = ""
+    @AppStorage("profileHandle") private var profileHandle = ""
+    @State private var name = ""
+    @State private var handle = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Edit profile")
+                .font(.hl(18))
+                .foregroundStyle(HL.ink)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 24)
+                .padding(.bottom, 20)
+
+            fieldLabel("Name")
+            styledField(String(localized: "My Days"), text: $name)
+                .padding(.bottom, 16)
+
+            fieldLabel("Handle")
+            styledField("@my.daily", text: $handle)
+                .padding(.bottom, 24)
+
+            PrimaryButton(title: String(localized: "Save"), systemImage: "checkmark") {
+                profileName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                profileHandle = handle.trimmingCharacters(in: .whitespacesAndNewlines)
+                dismiss()
             }
-            .overlay(alignment: .topTrailing) {
-                Text("\(log.clipCount) clips")
-                    .font(.hl(10))
-                    .foregroundStyle(HL.ink)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 1)
-                    .background {
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(.white)
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .strokeBorder(HL.ink, lineWidth: 1.5)
-                    }
-                    .padding(6)
+        }
+        .padding(.horizontal, 20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(HL.paper.ignoresSafeArea())
+        .onAppear {
+            name = profileName
+            handle = profileHandle
+        }
+    }
+
+    private func fieldLabel(_ text: LocalizedStringKey) -> some View {
+        Text(text)
+            .font(.hl(14))
+            .foregroundStyle(HL.ink)
+            .padding(.bottom, 8)
+    }
+
+    private func styledField(_ placeholder: String, text: Binding<String>) -> some View {
+        TextField(placeholder, text: text)
+            .font(.hlRegular(15))
+            .foregroundStyle(HL.ink)
+            .autocorrectionDisabled()
+            .textInputAutocapitalization(.never)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(.white)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(HL.ink, lineWidth: 2)
             }
     }
 }

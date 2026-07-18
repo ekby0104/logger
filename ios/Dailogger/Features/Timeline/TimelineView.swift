@@ -21,14 +21,18 @@ struct TimelineView: View {
                     .padding(.top, 3)
                     .padding(.bottom, 22)
 
-                ZStack(alignment: .topLeading) {
-                    VerticalDashedLine()
-                        .padding(.leading, 46)
-                        .padding(.vertical, 8)
+                if moments.isEmpty {
+                    EmptyMomentsCard()
+                } else {
+                    ZStack(alignment: .topLeading) {
+                        VerticalDashedLine()
+                            .padding(.leading, 46)
+                            .padding(.vertical, 8)
 
-                    VStack(spacing: 20) {
-                        ForEach(moments) { moment in
-                            TimelineEntry(moment: moment)
+                        VStack(spacing: 20) {
+                            ForEach(moments) { moment in
+                                TimelineEntry(moment: moment)
+                            }
                         }
                     }
                 }
@@ -56,6 +60,7 @@ private struct VerticalDashedLine: View {
 
 private struct TimelineEntry: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.modelContext) private var context
     let moment: Moment
 
     var body: some View {
@@ -124,5 +129,12 @@ private struct TimelineEntry: View {
         }
         .buttonStyle(.plain)
         .hardCard(radius: 16)
+        .contextMenu {
+            Button(role: .destructive) {
+                model.deleteMoment(moment, context: context)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
     }
 }

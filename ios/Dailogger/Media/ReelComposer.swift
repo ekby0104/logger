@@ -80,6 +80,11 @@ enum ReelComposer {
         let margin = 20 * scale
 
         let contentWidth = renderSize.width - margin * 2
+        // Social platforms overlay their own UI on the bottom ~25% and top
+        // ~10% of vertical video. Keep our overlays inside the safe zone:
+        // pill + caption sit at the top-left, just below the top margin.
+        // (Core Animation origin is bottom-left, so y is measured from bottom.)
+        let topSafeMargin = renderSize.height * 0.12
 
         for segment in segments {
             let pillImage = ReelOverlayRenderer.pill(
@@ -88,7 +93,8 @@ enum ReelComposer {
                 maxWidth: contentWidth,
                 ink: ink
             )
-            let pillLayer = imageLayer(pillImage, origin: CGPoint(x: margin, y: margin))
+            let pillY = renderSize.height - topSafeMargin - pillImage.size.height
+            let pillLayer = imageLayer(pillImage, origin: CGPoint(x: margin, y: pillY))
             setVisibility(pillLayer, start: segment.start, duration: segment.duration, totalSeconds: totalSeconds)
             parentLayer.addSublayer(pillLayer)
 
@@ -100,9 +106,10 @@ enum ReelComposer {
                     maxWidth: contentWidth,
                     ink: ink
                 )
+                let captionY = pillY - 10 * scale - captionImage.size.height
                 let captionLayer = imageLayer(
                     captionImage,
-                    origin: CGPoint(x: margin, y: margin + pillImage.size.height + 10 * scale)
+                    origin: CGPoint(x: margin, y: captionY)
                 )
                 setVisibility(captionLayer, start: segment.start, duration: segment.duration, totalSeconds: totalSeconds)
                 parentLayer.addSublayer(captionLayer)
@@ -114,10 +121,12 @@ enum ReelComposer {
             let display = trimmedBlog.count > 220
                 ? String(trimmedBlog.prefix(220)) + "…"
                 : trimmedBlog
+            // Slightly narrower than the frame so platform side buttons
+            // (likes/comments on the right edge) don't cover the text.
             let blogImage = ReelOverlayRenderer.blogPanel(
                 display,
                 fontSize: 15 * scale,
-                maxWidth: renderSize.width * 0.84,
+                maxWidth: renderSize.width * 0.78,
                 ink: ink
             )
             let blogLayer = imageLayer(

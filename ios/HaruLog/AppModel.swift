@@ -54,6 +54,7 @@ final class AppModel {
     var blogTitle = ""
     var blogBody = ""
     var blogIsAI = false
+    var blogDate: Date = .now
     var isWritingBlog = false
 
     // Toast
@@ -246,6 +247,7 @@ final class AppModel {
             blogTitle = title
             blogBody = body
             blogIsAI = saved.blogIsAI ?? false
+            blogDate = .now
             overlay = .blog
             return
         }
@@ -257,6 +259,7 @@ final class AppModel {
             self.blogTitle = result.title
             self.blogBody = result.body
             self.blogIsAI = result.isAIGenerated
+            self.blogDate = .now
             self.isWritingBlog = false
             self.overlay = .blog
 
@@ -274,6 +277,19 @@ final class AppModel {
             log.blogIsAI = result.isAIGenerated
             log.isBlogReady = true
         }
+    }
+
+    /// Opens a saved blog from the archive (Calendar day / Me tab).
+    func openBlog(_ log: DailyLog) {
+        guard let title = log.blogTitle, let body = log.blogText else {
+            flashToast("No blog for this day yet")
+            return
+        }
+        blogTitle = title
+        blogBody = body
+        blogIsAI = log.blogIsAI ?? false
+        blogDate = log.date
+        overlay = .blog
     }
 
     private func todayLog(context: ModelContext) -> DailyLog? {

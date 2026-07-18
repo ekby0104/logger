@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct ProfileView: View {
+    @Environment(AppModel.self) private var model
     @Query(sort: \DailyLog.date, order: .reverse) private var logs: [DailyLog]
     @Query private var moments: [Moment]
 
@@ -104,6 +105,15 @@ struct ProfileView: View {
     }
 
     private func archiveCell(_ log: DailyLog) -> some View {
+        Button {
+            model.openBlog(log)
+        } label: {
+            archiveCellContent(log)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func archiveCellContent(_ log: DailyLog) -> some View {
         PlaceholderBox(radius: 12)
             .aspectRatio(9.0 / 16.0, contentMode: .fit)
             .overlay(alignment: .bottomLeading) {

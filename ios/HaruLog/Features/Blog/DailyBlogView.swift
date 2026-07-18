@@ -10,7 +10,17 @@ struct DailyBlogView: View {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US")
         formatter.dateFormat = "EEEE, MMM d"
-        return formatter.string(from: .now)
+        return formatter.string(from: model.blogDate)
+    }
+
+    /// Clips recorded on the blog's day (empty for archived days without media).
+    private var dayMoments: [Moment] {
+        let calendar = Calendar.current
+        return moments.filter { calendar.isDate($0.createdAt, inSameDayAs: model.blogDate) }
+    }
+
+    private var shareText: String {
+        "\(model.blogTitle)\n\n\(model.blogBody)\n\n— HaruLog, \(dateLabel)"
     }
 
     var body: some View {
@@ -29,7 +39,7 @@ struct DailyBlogView: View {
                         .padding(.top, 4)
 
                     HStack(spacing: 8) {
-                        Text("\(moments.count) moments")
+                        Text("\(dayMoments.count) moments")
                             .font(.hl(12.5))
                             .foregroundStyle(HL.gray)
                         if model.blogIsAI {
@@ -59,25 +69,27 @@ struct DailyBlogView: View {
                         .hardCard(radius: 18)
                         .padding(.bottom, 24)
 
-                    Text("Today's clips")
-                        .font(.hl(16))
-                        .foregroundStyle(HL.ink)
-                        .padding(.bottom, 10)
+                    if !dayMoments.isEmpty {
+                        Text("Clips from this day")
+                            .font(.hl(16))
+                            .foregroundStyle(HL.ink)
+                            .padding(.bottom, 10)
 
-                    ScrollView(.horizontal) {
-                        HStack(spacing: 8) {
-                            ForEach(moments) { moment in
-                                VStack(spacing: 4) {
-                                    MomentThumb(moment: moment, radius: 10)
-                                        .frame(width: 64, height: 90)
-                                    Text(moment.timeLabel)
-                                        .font(.hl(10))
-                                        .foregroundStyle(HL.gray)
+                        ScrollView(.horizontal) {
+                            HStack(spacing: 8) {
+                                ForEach(dayMoments) { moment in
+                                    VStack(spacing: 4) {
+                                        MomentThumb(moment: moment, radius: 10)
+                                            .frame(width: 64, height: 90)
+                                        Text(moment.timeLabel)
+                                            .font(.hl(10))
+                                            .foregroundStyle(HL.gray)
+                                    }
                                 }
                             }
                         }
+                        .scrollIndicators(.hidden)
                     }
-                    .scrollIndicators(.hidden)
                 }
                 .padding(18)
                 .padding(.bottom, 40)
@@ -106,7 +118,12 @@ struct DailyBlogView: View {
 
             Spacer()
 
-            Color.clear.frame(width: 24, height: 24)
+            ShareLink(item: shareText) {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(HL.ink)
+                    .frame(width: 24, height: 24)
+            }
         }
         .padding(.horizontal, 16)
         .padding(.top, 12)

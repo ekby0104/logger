@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct CalendarView: View {
+    @Environment(AppModel.self) private var model
     @Query(sort: \DailyLog.date) private var logs: [DailyLog]
     @State private var selectedDay = Calendar.current.component(.day, from: .now)
 
@@ -116,30 +117,58 @@ struct CalendarView: View {
         .buttonStyle(.plain)
     }
 
+    private var selectedLog: DailyLog? {
+        logs.first { calendar.component(.day, from: $0.date) == selectedDay }
+    }
+
     private var detailCard: some View {
-        let hasBlog = blogDays.contains(selectedDay)
-        let meta = hasBlog ? "\(3 + selectedDay % 4) moments · blog ready" : "No records"
+        let log = selectedLog
+        let meta: String
+        if let log {
+            meta = log.blogText != nil
+                ? "\(log.clipCount) clips · blog ready"
+                : "\(log.clipCount) clips · no blog yet"
+        } else {
+            meta = "No records"
+        }
 
-        return VStack(alignment: .leading, spacing: 13) {
-            HStack {
-                Text("\(monthName) \(selectedDay)")
-                    .font(.hl(17))
-                    .foregroundStyle(HL.ink)
-                Spacer()
-                Text(meta)
-                    .font(.hlRegular(12.5))
-                    .foregroundStyle(HL.gray)
-            }
+        return Button {
+            if let log { model.openBlog(log) }
+        } label: {
+            VStack(alignment: .leading, spacing: 13) {
+                HStack {
+                    Text("\(monthName) \(selectedDay)")
+                        .font(.hl(17))
+                        .foregroundStyle(HL.ink)
+                    Spacer()
+                    Text(meta)
+                        .font(.hlRegular(12.5))
+                        .foregroundStyle(HL.gray)
+                }
 
-            HStack(spacing: 7) {
-                ForEach(0..<4) { _ in
-                    PlaceholderBox(radius: 10)
-                        .aspectRatio(9.0 / 16.0, contentMode: .fit)
-                        .frame(maxWidth: .infinity)
+                HStack(spacing: 7) {
+                    ForEach(0..<4) { _ in
+                        PlaceholderBox(radius: 10)
+                            .aspectRatio(9.0 / 16.0, contentMode: .fit)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+
+                if let log, log.blogText != nil {
+                    HStack(spacing: 5) {
+                        Image(systemName: "book")
+                            .font(.system(size: 12, weight: .bold))
+                        Text("Read the blog")
+                            .font(.hl(13))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .bold))
+                    }
+                    .foregroundStyle(HL.blue)
                 }
             }
+            .padding(16)
         }
-        .padding(16)
+        .buttonStyle(.plain)
         .hardCard(radius: 18)
     }
 }

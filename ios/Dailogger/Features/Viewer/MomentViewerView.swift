@@ -79,20 +79,8 @@ struct MomentViewerView: View {
                     onMockFinished: { step(1) }
                 )
 
-                // Same layout as the reel overlays: time·place pill and
-                // caption box stacked at the top-left.
-                HStack(alignment: .top, spacing: 12) {
-                    if let moment = current {
-                        VStack(alignment: .leading, spacing: 10) {
-                            metaPill(moment)
-                            if !moment.caption.isEmpty {
-                                captionBox(moment.caption)
-                            }
-                        }
-                    }
-
-                    Spacer(minLength: 12)
-
+                HStack {
+                    Spacer()
                     Button {
                         model.closeViewer()
                     } label: {
@@ -122,6 +110,24 @@ struct MomentViewerView: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 16)
+
+            // Identical geometry to the reel overlays: pill + caption at the
+            // top-left, 12% of the full frame height from the top, 20pt side
+            // margin, 10pt gap (see ReelComposer).
+            GeometryReader { geometry in
+                if let moment = current {
+                    VStack(alignment: .leading, spacing: 10) {
+                        metaPill(moment)
+                        if !moment.caption.isEmpty {
+                            captionBox(moment.caption)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .offset(y: geometry.size.height * 0.12)
+                }
+            }
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
         }
         .onAppear { updatePlayer() }
         .onChange(of: model.viewerMoment?.id) { updatePlayer() }

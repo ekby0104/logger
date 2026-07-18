@@ -166,12 +166,14 @@ enum ReelComposer {
         parentLayer.frame = CGRect(origin: .zero, size: renderSize)
         parentLayer.backgroundColor = paper.cgColor
 
-        // Dashed rail + purple dot
-        let railHeight = cardH + 32 * scale
+        // Dashed rail + purple dot. The rail matches the media area's y and
+        // height exactly so it never pokes into platform UI (e.g. the
+        // Instagram story avatar at the top-left).
+        let railHeight = mediaH
         let railImage = ReelOverlayRenderer.dashedLine(height: railHeight, width: 2 * scale, ink: ink)
         parentLayer.addSublayer(imageLayer(
             railImage,
-            origin: CGPoint(x: lineX - scale, y: flipY(cardTop - 16 * scale, railHeight))
+            origin: CGPoint(x: lineX - scale, y: flipY(mediaTop, railHeight))
         ))
 
         let dotDiameter = 14 * scale

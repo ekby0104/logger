@@ -9,7 +9,6 @@ struct EditMomentView: View {
     /// Local state so typing doesn't route through the app-wide model on every keystroke.
     @State private var caption = ""
 
-    private let moodColumns = [GridItem(.adaptive(minimum: 92), spacing: 8)]
 
     private var draftDurationLabel: String {
         if let editing = model.editingMoment {
@@ -91,14 +90,6 @@ struct EditMomentView: View {
                             .fill(.white)
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .strokeBorder(HL.ink, lineWidth: 2)
-                    }
-
-                    sectionLabel("Mood")
-                        .padding(.top, 20)
-                    LazyVGrid(columns: moodColumns, alignment: .leading, spacing: 8) {
-                        ForEach(Mood.allCases, id: \.self) { mood in
-                            moodChip(mood)
-                        }
                     }
 
                     sectionLabel("Location · Time")
@@ -204,30 +195,6 @@ struct EditMomentView: View {
             .font(.hl(14))
             .foregroundStyle(HL.ink)
             .padding(.bottom, 8)
-    }
-
-    private func moodChip(_ mood: Mood) -> some View {
-        let selected = mood == model.draftMood
-        return Button {
-            model.draftMood = mood
-        } label: {
-            Text(mood.displayName)
-                .font(.hl(14))
-                .foregroundStyle(selected ? .white : HL.ink)
-                .padding(.horizontal, 16)
-                .frame(height: 38)
-                .frame(maxWidth: .infinity)
-                .background {
-                    ZStack {
-                        if selected {
-                            Capsule().fill(HL.ink).offset(x: 3, y: 3)
-                        }
-                        Capsule().fill(selected ? HL.purple : Color.white)
-                        Capsule().strokeBorder(HL.ink, lineWidth: 2)
-                    }
-                }
-        }
-        .buttonStyle(.plain)
     }
 
     private func infoRow(systemImage: String, text: String) -> some View {

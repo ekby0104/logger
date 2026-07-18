@@ -261,6 +261,12 @@
     },
     "Blog saved" : {
       "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "블로그를 저장했어요" } } }
+    },
+    "Preview reel" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "릴 미리보기" } } }
+    },
+    "Share" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "공유" } } }
     }
   },
   "version" : "1.0"

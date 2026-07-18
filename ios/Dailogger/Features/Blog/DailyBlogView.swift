@@ -1,3 +1,4 @@
+import AVKit
 import SwiftUI
 import SwiftData
 import UIKit
@@ -212,6 +213,7 @@ private struct BlogReelSection: View {
 
     @State private var reelURL: URL?
     @State private var isMakingReel = false
+    @State private var showPreview = false
 
     private var clipURLs: [URL] {
         moments.compactMap(\.videoURL)
@@ -221,19 +223,40 @@ private struct BlogReelSection: View {
         Group {
             if !clipURLs.isEmpty {
                 if let reelURL {
-                    ShareLink(item: reelURL) {
-                        HStack(spacing: 7) {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 16, weight: .bold))
-                            Text("Share reel video")
-                                .font(.hl(16))
+                    HStack(spacing: 14) {
+                        Button {
+                            showPreview = true
+                        } label: {
+                            HStack(spacing: 7) {
+                                Image(systemName: "play.fill")
+                                    .font(.system(size: 15, weight: .bold))
+                                Text("Preview reel")
+                                    .font(.hl(15))
+                            }
+                            .foregroundStyle(HL.ink)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
                         }
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
+                        .buttonStyle(.plain)
+                        .hardCard(radius: 12, shadowOffset: 4)
+
+                        ShareLink(item: reelURL) {
+                            HStack(spacing: 7) {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.system(size: 15, weight: .bold))
+                                Text("Share")
+                                    .font(.hl(15))
+                            }
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                        }
+                        .buttonStyle(.plain)
+                        .hardCard(fill: HL.purple, radius: 12, shadowOffset: 4)
                     }
-                    .buttonStyle(.plain)
-                    .hardCard(fill: HL.purple, radius: 12, shadowOffset: 4)
+                    .sheet(isPresented: $showPreview) {
+                        ReelPreviewSheet(url: reelURL)
+                    }
                 } else {
                     PrimaryButton(
                         title: isMakingReel
@@ -265,6 +288,65 @@ private struct BlogReelSection: View {
                 model.flashToast(String(localized: "Couldn't make the reel"))
             }
             isMakingReel = false
+        }
+    }
+}
+
+// MARK: - Reel preview player
+
+private struct ReelPreviewSheet: View {
+    let url: URL
+    @Environment(\.dismiss) private var dismiss
+    @State private var player: AVPlayer?
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(HL.ink)
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+
+                Text("Preview reel")
+                    .font(.hl(17))
+                    .foregroundStyle(HL.ink)
+
+                Spacer()
+
+                Color.clear.frame(width: 24, height: 24)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
+            .background {
+                HL.paper
+                    .overlay(alignment: .bottom) {
+                        Rectangle().fill(HL.ink).frame(height: 2)
+                    }
+            }
+
+            if let player {
+                VideoPlayer(player: player)
+                    .background(HL.camBackground)
+            } else {
+                HL.camBackground
+            }
+        }
+        .background(HL.camBackground.ignoresSafeArea())
+        .onAppear {
+            let newPlayer = AVPlayer(url: url)
+            player = newPlayer
+            newPlayer.play()
+        }
+        .onDisappear {
+            player?.pause()
+            player = nil
         }
     }
 }

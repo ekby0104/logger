@@ -430,7 +430,8 @@ enum ReelComposer {
 /// translucent blog panel.
 enum ReelOverlayRenderer {
     private static func font(_ size: CGFloat) -> UIFont {
-        UIFont(name: "ChalkboardSE-Bold", size: size)
+        UIFont(name: "Gaegu-Bold", size: size)
+            ?? UIFont(name: "ChalkboardSE-Bold", size: size)
             ?? UIFont.boldSystemFont(ofSize: size)
     }
 

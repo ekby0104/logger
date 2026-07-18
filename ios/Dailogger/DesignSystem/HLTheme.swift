@@ -27,12 +27,14 @@ enum HL {
 }
 
 extension Font {
-    /// Hand-drawn display face (iOS built-in Chalkboard SE)
+    /// Hand-drawn display face — Gaegu(개구), bundled in Fonts/, covers
+    /// Korean with the same handwriting mood. Falls back to the system
+    /// font automatically if registration fails.
     static func hl(_ size: CGFloat) -> Font {
-        .custom("ChalkboardSE-Bold", size: size)
+        .custom("Gaegu-Bold", size: size)
     }
 
     static func hlRegular(_ size: CGFloat) -> Font {
-        .custom("ChalkboardSE-Regular", size: size)
+        .custom("Gaegu-Regular", size: size)
     }
 }

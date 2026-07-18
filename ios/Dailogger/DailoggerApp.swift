@@ -3,6 +3,10 @@ import SwiftData
 
 @main
 struct DailoggerApp: App {
+    init() {
+        FontLoader.registerBundledFonts()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootTabView()

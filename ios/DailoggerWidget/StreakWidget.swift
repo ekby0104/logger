@@ -53,21 +53,21 @@ struct StreakWidgetView: View {
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(purple)
                 Text("Streak")
-                    .font(.custom("ChalkboardSE-Bold", size: 13))
+                    .font(.custom("Gaegu-Bold", size: 13))
                     .foregroundStyle(gray)
             }
 
             Text("\(entry.streak)")
-                .font(.custom("ChalkboardSE-Bold", size: 44))
+                .font(.custom("Gaegu-Bold", size: 44))
                 .foregroundStyle(ink)
 
             if entry.todayCount == 0 {
                 Text("No clips yet today")
-                    .font(.custom("ChalkboardSE-Bold", size: 11))
+                    .font(.custom("Gaegu-Bold", size: 11))
                     .foregroundStyle(gray)
             } else {
                 Text("\(entry.todayCount) clips today")
-                    .font(.custom("ChalkboardSE-Bold", size: 11))
+                    .font(.custom("Gaegu-Bold", size: 11))
                     .foregroundStyle(gray)
             }
         }

@@ -34,3 +34,11 @@ python3 -m http.server 8000
 - `index.html` — page shell, phone frame, status bar
 - `style.css` — design tokens and all component styles
 - `app.js` — state, actions, and view rendering (vanilla JS)
+
+## iOS App (planning)
+
+네이티브 iPhone 앱 개발을 위한 설계 문서:
+
+- [`docs/01-화면분석-설계.md`](docs/01-화면분석-설계.md) — 화면 구조·컴포넌트·데이터 모델 분석
+- [`docs/02-기술스택.md`](docs/02-기술스택.md) — Swift 6 / SwiftUI / SwiftData / AVFoundation / Foundation Models 스택 선정
+- [`docs/03-개발명세-순서.md`](docs/03-개발명세-순서.md) — SPM 모듈 구조, MVP 범위, Phase별 개발 순서

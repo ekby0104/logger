@@ -83,16 +83,31 @@ struct MomentViewerView: View {
         }
         .onAppear { updatePlayer() }
         .onChange(of: model.viewerMoment?.id) { updatePlayer() }
+        .onDisappear { tearDownPlayer() }
     }
 
+    /// Reuses a single AVPlayer and swaps its item, so the previous clip's
+    /// audio stops the moment the viewer moves to another moment.
     private func updatePlayer() {
-        if let url = current?.videoURL {
+        guard let url = current?.videoURL else {
+            tearDownPlayer()
+            return
+        }
+        if let player {
+            player.pause()
+            player.replaceCurrentItem(with: AVPlayerItem(url: url))
+            player.play()
+        } else {
             let newPlayer = AVPlayer(url: url)
             player = newPlayer
             newPlayer.play()
-        } else {
-            player = nil
         }
+    }
+
+    private func tearDownPlayer() {
+        player?.pause()
+        player?.replaceCurrentItem(with: nil)
+        player = nil
     }
 
     private var progressBars: some View {

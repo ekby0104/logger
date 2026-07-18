@@ -1,14 +1,20 @@
 import SwiftUI
 
-/// Camera capture screen.
-/// Phase 4 scaffold: full UI + record state machine with a mock preview.
-/// Real AVFoundation capture lands in Phase 5 (CameraKit).
+/// Camera capture screen: live AVFoundation preview + segment recording.
+/// Falls back to mock recording (timer only) on Simulator / no camera.
 struct CameraView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
         ZStack {
             HL.camBackground.ignoresSafeArea()
+
+            if model.cameraReady {
+                CameraPreviewView(session: model.camera.session)
+                    .ignoresSafeArea()
+            } else {
+                statusMessage
+            }
 
             LinearGradient(
                 stops: [
@@ -21,11 +27,7 @@ struct CameraView: View {
                 endPoint: .bottom
             )
             .ignoresSafeArea()
-
-            Text("Camera preview\n(AVFoundation — Phase 5)")
-                .font(.hlRegular(13))
-                .foregroundStyle(.white.opacity(0.35))
-                .multilineTextAlignment(.center)
+            .allowsHitTesting(false)
 
             VStack(spacing: 0) {
                 topControls
@@ -38,6 +40,47 @@ struct CameraView: View {
         }
         .overlay(alignment: .bottom) {
             ToastView()
+        }
+        .onAppear { model.camera.start() }
+        .onDisappear { model.camera.stop() }
+    }
+
+    private var statusMessage: some View {
+        VStack(spacing: 12) {
+            if model.cameraPermissionDenied {
+                Text("Camera access is off")
+                    .font(.hl(16))
+                    .foregroundStyle(.white)
+                Text("Allow camera access in Settings\nto record your moments.")
+                    .font(.hlRegular(13))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                Button {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                } label: {
+                    Text("Open Settings")
+                        .font(.hl(14))
+                        .foregroundStyle(HL.ink)
+                        .padding(.horizontal, 18)
+                        .frame(height: 40)
+                        .background {
+                            Capsule().fill(.white)
+                            Capsule().strokeBorder(HL.ink, lineWidth: 2)
+                        }
+                }
+                .buttonStyle(.plain)
+            } else if model.cameraUnavailable {
+                Text("No camera on this device\n— recording is mocked")
+                    .font(.hlRegular(13))
+                    .foregroundStyle(.white.opacity(0.35))
+                    .multilineTextAlignment(.center)
+            } else {
+                Text("Preparing camera…")
+                    .font(.hlRegular(13))
+                    .foregroundStyle(.white.opacity(0.35))
+            }
         }
     }
 

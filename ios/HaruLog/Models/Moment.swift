@@ -19,6 +19,8 @@ final class Moment {
     var moodRaw: String
     var duration: TimeInterval
     var placeName: String
+    var videoFileName: String?
+    var thumbnailFileName: String?
 
     init(
         id: UUID = UUID(),
@@ -27,7 +29,9 @@ final class Moment {
         caption: String,
         mood: Mood,
         duration: TimeInterval,
-        placeName: String
+        placeName: String,
+        videoFileName: String? = nil,
+        thumbnailFileName: String? = nil
     ) {
         self.id = id
         self.createdAt = createdAt
@@ -36,7 +40,12 @@ final class Moment {
         self.moodRaw = mood.rawValue
         self.duration = duration
         self.placeName = placeName
+        self.videoFileName = videoFileName
+        self.thumbnailFileName = thumbnailFileName
     }
+
+    var videoURL: URL? { MediaStore.url(fileName: videoFileName) }
+    var thumbnailURL: URL? { MediaStore.url(fileName: thumbnailFileName) }
 
     var mood: Mood {
         get { Mood(rawValue: moodRaw) ?? .calm }

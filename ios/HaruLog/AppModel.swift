@@ -1,9 +1,10 @@
 import Foundation
 import SwiftData
 import SwiftUI
+import UIKit
 
 /// App-wide UI state: tab selection, overlay routing, capture state, drafts, toast.
-/// Mirrors the wireframe's component state machine.
+/// Owns the CameraService and bridges its callbacks into observable state.
 @Observable
 final class AppModel {
     enum Tab: Hashable {
@@ -18,15 +19,25 @@ final class AppModel {
     var tab: Tab = .today
     var overlay: Overlay?
 
-    // Capture state
+    // Capture state (UI)
     var isRecording = false
     var elapsed = 0
     var segments: [Int] = []
     var isFrontCamera = false
 
+    // Camera hardware
+    @ObservationIgnored let camera = CameraService()
+    var cameraReady = false
+    var cameraUnavailable = false
+    var cameraPermissionDenied = false
+    var segmentURLs: [URL] = []
+
     // Draft (Edit screen)
     var draftCaption = ""
     var draftMood: Mood = .calm
+    var draftThumbnail: UIImage?
+    var isMerging = false
+    @ObservationIgnored private var draftVideoTempURL: URL?
 
     // Viewer
     var viewerMoment: Moment?
@@ -36,6 +47,17 @@ final class AppModel {
 
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var toastTask: Task<Void, Never>?
+
+    init() {
+        camera.onReady = { [weak self] in self?.cameraReady = true }
+        camera.onUnavailable = { [weak self] in self?.cameraUnavailable = true }
+        camera.onPermissionDenied = { [weak self] in self?.cameraPermissionDenied = true }
+        camera.onFlipped = { [weak self] isFront in self?.isFrontCamera = isFront }
+        camera.onSegmentFinished = { [weak self] url in
+            self?.segmentURLs.append(url)
+            self?.mergeWhenReady()
+        }
+    }
 
     var recordedSeconds: Int {
         segments.reduce(0, +) + elapsed
@@ -48,18 +70,13 @@ final class AppModel {
     // MARK: - Navigation
 
     func openCamera() {
-        isRecording = false
-        elapsed = 0
-        segments = []
+        resetCapture()
         draftMood = .calm
         overlay = .camera
     }
 
     func closeOverlay() {
-        stopTimer()
-        isRecording = false
-        elapsed = 0
-        segments = []
+        resetCapture()
         overlay = nil
     }
 
@@ -89,8 +106,10 @@ final class AppModel {
             segments.append(max(elapsed, 1))
             elapsed = 0
             isRecording = false
+            if cameraReady { camera.stopRecording() }
         } else {
             isRecording = true
+            if cameraReady { camera.startRecording() }
             timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
                 self?.elapsed += 1
             }
@@ -98,7 +117,11 @@ final class AppModel {
     }
 
     func flipCamera() {
-        isFrontCamera.toggle()
+        if cameraReady {
+            camera.flip()
+        } else {
+            isFrontCamera.toggle()
+        }
     }
 
     func goToEdit() {
@@ -106,33 +129,70 @@ final class AppModel {
             flashToast("Record a moment first")
             return
         }
+        if isRecording {
+            toggleRecord() // finalize the in-flight segment
+        }
         stopTimer()
         isRecording = false
         draftCaption = ""
         overlay = .edit
+        mergeWhenReady()
+    }
+
+    /// Merges recorded segment files once they have all landed on disk.
+    /// Called both when entering Edit and when a late segment file arrives.
+    private func mergeWhenReady() {
+        guard overlay == .edit,
+              !segmentURLs.isEmpty,
+              segmentURLs.count >= segments.count,
+              draftVideoTempURL == nil,
+              !isMerging else { return }
+
+        isMerging = true
+        let urls = segmentURLs
+        Task { @MainActor [weak self] in
+            do {
+                let merged = try await VideoComposer.merge(segmentURLs: urls)
+                self?.draftVideoTempURL = merged
+                self?.draftThumbnail = await VideoComposer.thumbnail(for: merged)
+            } catch {
+                self?.flashToast("Couldn't process the clip")
+            }
+            self?.isMerging = false
+        }
     }
 
     // MARK: - Saving
 
     func saveMoment(context: ModelContext) {
         let seconds = max(recordedSeconds, 5)
+        let id = UUID()
+
+        var videoName: String?
+        var thumbnailName: String?
+        if let tempURL = draftVideoTempURL {
+            videoName = MediaStore.persistVideo(from: tempURL, id: id)
+            if let thumbnail = draftThumbnail {
+                thumbnailName = MediaStore.persistThumbnail(thumbnail, id: id)
+            }
+        }
+
         let moment = Moment(
+            id: id,
             createdAt: .now,
             title: draftCaption.isEmpty ? "New moment" : String(draftCaption.prefix(14)),
             caption: draftCaption.isEmpty ? "A moment just captured." : draftCaption,
             mood: draftMood,
             duration: TimeInterval(seconds),
-            placeName: "Seongsu-dong, Seoul"
+            placeName: "Seongsu-dong, Seoul",
+            videoFileName: videoName,
+            thumbnailFileName: thumbnailName
         )
         context.insert(moment)
 
-        stopTimer()
+        resetCapture()
         overlay = nil
         tab = .today
-        draftCaption = ""
-        isRecording = false
-        elapsed = 0
-        segments = []
         flashToast("Saved to your timeline")
     }
 
@@ -150,6 +210,21 @@ final class AppModel {
             guard !Task.isCancelled else { return }
             self?.toast = nil
         }
+    }
+
+    // MARK: - Private
+
+    private func resetCapture() {
+        stopTimer()
+        isRecording = false
+        elapsed = 0
+        segments = []
+        camera.discardSegments(segmentURLs)
+        segmentURLs = []
+        draftVideoTempURL = nil
+        draftThumbnail = nil
+        draftCaption = ""
+        isMerging = false
     }
 
     private func stopTimer() {

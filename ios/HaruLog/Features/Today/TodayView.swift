@@ -99,7 +99,7 @@ struct MomentRow: View {
             model.openViewer(moment)
         } label: {
             HStack(spacing: 12) {
-                PlaceholderBox(radius: 11)
+                MomentThumb(moment: moment, radius: 11)
                     .frame(width: 70, height: 98)
                     .overlay(alignment: .bottomLeading) {
                         DurBadge(text: moment.durationLabel)

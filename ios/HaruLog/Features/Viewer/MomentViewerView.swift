@@ -1,11 +1,13 @@
+import AVKit
 import SwiftUI
 import SwiftData
 
 /// Story-style viewer. Tap left/right halves to move between moments.
-/// Video playback (AVPlayer) lands in Phase 7 — the scaffold shows the mock frame.
+/// Plays the recorded clip when the moment has one; shows the mock frame otherwise.
 struct MomentViewerView: View {
     @Environment(AppModel.self) private var model
     @Query(sort: \Moment.createdAt) private var moments: [Moment]
+    @State private var player: AVPlayer?
 
     private var current: Moment? {
         model.viewerMoment ?? moments.first
@@ -19,6 +21,12 @@ struct MomentViewerView: View {
     var body: some View {
         ZStack {
             HL.camBackground.ignoresSafeArea()
+
+            if let player {
+                VideoPlayer(player: player)
+                    .disabled(true)
+                    .ignoresSafeArea()
+            }
 
             LinearGradient(
                 stops: [
@@ -72,6 +80,18 @@ struct MomentViewerView: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 16)
+        }
+        .onAppear { updatePlayer() }
+        .onChange(of: model.viewerMoment?.id) { updatePlayer() }
+    }
+
+    private func updatePlayer() {
+        if let url = current?.videoURL {
+            let newPlayer = AVPlayer(url: url)
+            player = newPlayer
+            newPlayer.play()
+        } else {
+            player = nil
         }
     }
 

@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct EditMomentView: View {
     @Environment(AppModel.self) private var model
@@ -20,19 +21,39 @@ struct EditMomentView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    PlaceholderBox(radius: 16)
-                        .frame(width: 158, height: 280)
-                        .overlay(alignment: .bottomLeading) {
-                            DurBadge(text: draftDurationLabel)
-                                .padding(8)
+                    ZStack {
+                        if let thumbnail = model.draftThumbnail {
+                            Color.clear
+                                .overlay {
+                                    Image(uiImage: thumbnail)
+                                        .resizable()
+                                        .scaledToFill()
+                                }
+                                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .strokeBorder(HL.ink, lineWidth: 2)
+                                }
+                        } else {
+                            PlaceholderBox(radius: 16)
                         }
-                        .background {
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(HL.ink)
-                                .offset(x: 6, y: 6)
+                        if model.isMerging {
+                            ProgressView()
+                                .tint(HL.ink)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.bottom, 18)
+                    }
+                    .frame(width: 158, height: 280)
+                    .overlay(alignment: .bottomLeading) {
+                        DurBadge(text: draftDurationLabel)
+                            .padding(8)
+                    }
+                    .background {
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(HL.ink)
+                            .offset(x: 6, y: 6)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.bottom, 18)
 
                     sectionLabel("Caption")
                     TextField(
@@ -74,6 +95,8 @@ struct EditMomentView: View {
                     ) {
                         model.saveMoment(context: context)
                     }
+                    .disabled(model.isMerging)
+                    .opacity(model.isMerging ? 0.6 : 1)
                     .padding(.top, 24)
                 }
                 .padding(18)

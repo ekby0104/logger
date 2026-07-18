@@ -87,7 +87,7 @@ private struct TimelineEntry: View {
             model.openViewer(moment)
         } label: {
             VStack(alignment: .leading, spacing: 0) {
-                PlaceholderBox(radius: 0)
+                MomentThumb(moment: moment, radius: 0)
                     .frame(height: 150)
                     .overlay(alignment: .bottomLeading) {
                         HStack(spacing: 6) {

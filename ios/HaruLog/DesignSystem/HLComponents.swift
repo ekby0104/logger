@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Hard card (neo-brutal: white fill, ink border, hard offset shadow)
 
@@ -52,6 +53,32 @@ struct PlaceholderBox: View {
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .strokeBorder(HL.ink, lineWidth: 2)
             }
+    }
+}
+
+// MARK: - Moment thumbnail (real frame if available, placeholder otherwise)
+
+struct MomentThumb: View {
+    let moment: Moment
+    var radius: CGFloat = 11
+
+    var body: some View {
+        if let url = moment.thumbnailURL,
+           let image = UIImage(contentsOfFile: url.path) {
+            Color.clear
+                .overlay {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                }
+                .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: radius, style: .continuous)
+                        .strokeBorder(HL.ink, lineWidth: 2)
+                }
+        } else {
+            PlaceholderBox(radius: radius)
+        }
     }
 }
 

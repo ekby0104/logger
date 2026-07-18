@@ -32,16 +32,21 @@ cd ios && xcodegen
 open HaruLog.xcodeproj
 ```
 
-## 현재 구현 상태 (Phase 0~4)
+## 현재 구현 상태 (Phase 0~5)
 
 | 화면 | 상태 |
 |---|---|
 | Today / Timeline / Calendar / Me 탭 | ✅ 완성 (SwiftData 시드 데이터) |
 | 커스텀 탭바 + 중앙 녹화 FAB | ✅ |
-| Camera | ✅ UI·녹화 상태머신(타이머·세그먼트) — 프리뷰는 Phase 5에서 AVFoundation 연결 |
-| Edit → 저장 → Today 반영 → 토스트 | ✅ |
-| 스토리 뷰어 (좌/우 탭 이동) | ✅ — 영상 재생은 Phase 7 |
+| Camera | ✅ **실제 AVFoundation 녹화** — 라이브 프리뷰, 세그먼트 끊어찍기, 전·후면 전환, 권한 거부 처리. 시뮬레이터에선 목(타이머) 동작 |
+| 세그먼트 병합·썸네일 | ✅ AVMutableComposition 병합 + AVAssetImageGenerator 썸네일 → Documents/Moments 저장 |
+| Edit → 저장 → Today 반영 → 토스트 | ✅ 실제 영상·썸네일 연결 |
+| 스토리 뷰어 (좌/우 탭 이동) | ✅ 녹화된 클립 자동 재생 — 스토리식 자동 진행·일시정지는 Phase 7 |
 | 데일리 블로그 AI | Phase 8 예정 (Foundation Models) |
+| 계정·로그인 | 2차 릴리즈 백로그 (Sign in with Apple 예정) |
+
+> 카메라는 시뮬레이터에 하드웨어가 없으므로 **실기기(아이폰 케이블 연결)에서 테스트**해야 합니다.
+> 첫 진입 시 카메라·마이크 권한 팝업이 뜹니다.
 
 ## 구조
 

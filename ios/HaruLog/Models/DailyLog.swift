@@ -6,6 +6,9 @@ final class DailyLog {
     var date: Date
     var clipCount: Int
     var isBlogReady: Bool
+    var blogTitle: String?
+    var blogText: String?
+    var blogIsAI: Bool?
 
     init(date: Date, clipCount: Int, isBlogReady: Bool = true) {
         self.date = date

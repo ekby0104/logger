@@ -13,7 +13,7 @@ final class AppModel {
     }
 
     enum Overlay: String, Identifiable {
-        case camera, edit, viewer
+        case camera, edit, viewer, blog
         var id: String { rawValue }
     }
 
@@ -49,6 +49,12 @@ final class AppModel {
 
     // Viewer
     var viewerMoment: Moment?
+
+    // Daily blog
+    var blogTitle = ""
+    var blogBody = ""
+    var blogIsAI = false
+    var isWritingBlog = false
 
     // Toast
     var toast: String?
@@ -225,8 +231,59 @@ final class AppModel {
         flashToast("Saved to your timeline")
     }
 
-    func makeBlog() {
-        flashToast("Your daily blog is ready")
+    func makeBlog(moments: [Moment], context: ModelContext) {
+        guard !moments.isEmpty else {
+            flashToast("Record a moment first")
+            return
+        }
+        guard !isWritingBlog else { return }
+
+        // Reuse today's saved blog while the moment count is unchanged.
+        if let saved = todayLog(context: context),
+           let title = saved.blogTitle,
+           let body = saved.blogText,
+           saved.clipCount == moments.count {
+            blogTitle = title
+            blogBody = body
+            blogIsAI = saved.blogIsAI ?? false
+            overlay = .blog
+            return
+        }
+
+        isWritingBlog = true
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            let result = await BlogWriter.write(for: moments, date: .now)
+            self.blogTitle = result.title
+            self.blogBody = result.body
+            self.blogIsAI = result.isAIGenerated
+            self.isWritingBlog = false
+            self.overlay = .blog
+
+            let log = self.todayLog(context: context) ?? {
+                let newLog = DailyLog(
+                    date: Calendar.current.startOfDay(for: .now),
+                    clipCount: moments.count
+                )
+                context.insert(newLog)
+                return newLog
+            }()
+            log.clipCount = moments.count
+            log.blogTitle = result.title
+            log.blogText = result.body
+            log.blogIsAI = result.isAIGenerated
+            log.isBlogReady = true
+        }
+    }
+
+    private func todayLog(context: ModelContext) -> DailyLog? {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: .now)
+        let end = calendar.date(byAdding: .day, value: 1, to: start) ?? start
+        let descriptor = FetchDescriptor<DailyLog>(
+            predicate: #Predicate { $0.date >= start && $0.date < end }
+        )
+        return (try? context.fetch(descriptor))?.first
     }
 
     // MARK: - Toast

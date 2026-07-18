@@ -27,6 +27,7 @@ struct RootTabView: View {
                 case .camera: CameraView()
                 case .edit: EditMomentView()
                 case .viewer: MomentViewerView()
+                case .blog: DailyBlogView()
                 }
             }
             .environment(model)

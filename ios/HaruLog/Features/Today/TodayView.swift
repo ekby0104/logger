@@ -3,6 +3,7 @@ import SwiftData
 
 struct TodayView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.modelContext) private var context
     @Query(sort: \Moment.createdAt) private var moments: [Moment]
 
     private var dateLabel: String {
@@ -81,9 +82,14 @@ struct TodayView: View {
             }
             .padding(.bottom, 16)
 
-            PrimaryButton(title: "Create daily blog", systemImage: "sparkles") {
-                model.makeBlog()
+            PrimaryButton(
+                title: model.isWritingBlog ? "Writing your day…" : "Create daily blog",
+                systemImage: model.isWritingBlog ? "hourglass" : "sparkles"
+            ) {
+                model.makeBlog(moments: moments, context: context)
             }
+            .disabled(model.isWritingBlog)
+            .opacity(model.isWritingBlog ? 0.7 : 1)
         }
         .padding(20)
         .hardCard(radius: 20)

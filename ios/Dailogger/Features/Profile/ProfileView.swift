@@ -8,6 +8,7 @@ struct ProfileView: View {
     @Query private var moments: [Moment]
     @State private var showSettings = false
     @State private var showEditProfile = false
+    @State private var showFontPicker = false
     @AppStorage("profileName") private var profileName = ""
     @AppStorage("profileHandle") private var profileHandle = ""
     @AppStorage(ReminderService.enabledKey) private var reminderEnabled = false
@@ -105,6 +106,9 @@ struct ProfileView: View {
                 Button("Edit profile") {
                     showEditProfile = true
                 }
+                Button("Change font") {
+                    showFontPicker = true
+                }
                 if reminderEnabled {
                     Button("Turn off daily reminder") {
                         reminderEnabled = false
@@ -127,7 +131,19 @@ struct ProfileView: View {
                 ProfileEditSheet()
                     .presentationDetents([.height(340)])
             }
+            .confirmationDialog("Change font", isPresented: $showFontPicker) {
+                Button("Handwriting (KwonJungae)") { setFont(.kwonjungae) }
+                Button("Typewriter") { setFont(.typewriter) }
+                Button("System default") { setFont(.system) }
+                Button("Cancel", role: .cancel) {}
+            }
         }
+    }
+
+    private func setFont(_ choice: HLFontChoice) {
+        UserDefaults.standard.set(choice.rawValue, forKey: HLFontChoice.storageKey)
+        WidgetBridge.syncFontChoice(choice.rawValue)
+        model.flashToast(String(localized: "Font changed"))
     }
 
     private var statsCard: some View {

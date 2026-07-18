@@ -211,6 +211,21 @@
     "Edit profile" : {
       "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "프로필 편집" } } }
     },
+    "Change font" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "폰트 바꾸기" } } }
+    },
+    "Handwriting (KwonJungae)" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "손글씨 (권정애체)" } } }
+    },
+    "Typewriter" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "타자기체" } } }
+    },
+    "System default" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "시스템 기본" } } }
+    },
+    "Font changed" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "폰트를 바꿨어요" } } }
+    },
     "Name" : {
       "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "이름" } } }
     },

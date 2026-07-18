@@ -4,6 +4,9 @@ import SwiftData
 struct RootTabView: View {
     @State private var model = AppModel()
     @Environment(\.modelContext) private var context
+    // Font helpers read this key at render time; changing it forces the
+    // whole tree to rebuild via .id so every screen picks up the new face.
+    @AppStorage(HLFontChoice.storageKey) private var appFont = ""
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -21,6 +24,7 @@ struct RootTabView: View {
 
             TabBar()
         }
+        .id(appFont)
         .fullScreenCover(item: $model.overlay) { overlay in
             Group {
                 switch overlay {

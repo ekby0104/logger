@@ -26,15 +26,44 @@ enum HL {
     static let calEmpty = Color(hex: 0xF1F3F7)
 }
 
+/// User-selectable app typeface. Stored in UserDefaults ("appFont") and
+/// mirrored into the app group so the widget follows along.
+enum HLFontChoice: String, CaseIterable {
+    case kwonjungae
+    case typewriter
+    case system
+
+    static let storageKey = "appFont"
+
+    static var current: HLFontChoice {
+        HLFontChoice(
+            rawValue: UserDefaults.standard.string(forKey: storageKey) ?? ""
+        ) ?? .kwonjungae
+    }
+}
+
 extension Font {
-    /// Hand-drawn face — 권정애체 (Together-KwonJungae), bundled in Fonts/.
-    /// Single weight, so both roles share it; hierarchy comes from size
-    /// and color. Falls back to the system font if registration fails.
+    /// Display face for the chosen typeface (bold role).
     static func hl(_ size: CGFloat) -> Font {
-        .custom("Together-KwonJungae", size: size)
+        switch HLFontChoice.current {
+        case .kwonjungae:
+            return .custom("Together-KwonJungae", size: size)
+        case .typewriter:
+            return .custom("AmericanTypewriter-Bold", size: size)
+        case .system:
+            return .system(size: size, weight: .bold)
+        }
     }
 
+    /// Body face for the chosen typeface (regular role).
     static func hlRegular(_ size: CGFloat) -> Font {
-        .custom("Together-KwonJungae", size: size)
+        switch HLFontChoice.current {
+        case .kwonjungae:
+            return .custom("Together-KwonJungae", size: size)
+        case .typewriter:
+            return .custom("AmericanTypewriter", size: size)
+        case .system:
+            return .system(size: size, weight: .regular)
+        }
     }
 }

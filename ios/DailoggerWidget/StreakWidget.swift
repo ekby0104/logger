@@ -46,6 +46,20 @@ struct StreakWidgetView: View {
     private let purple = Color(red: 0xA8 / 255, green: 0x55 / 255, blue: 0xF7 / 255)
     private let gray = Color(red: 0x4F / 255, green: 0x56 / 255, blue: 0x63 / 255)
 
+    /// Follows the app's font choice via the shared app group.
+    private func widgetFont(_ size: CGFloat) -> Font {
+        let choice = UserDefaults(suiteName: "group.com.dailogger.app")?
+            .string(forKey: "appFont") ?? "kwonjungae"
+        switch choice {
+        case "typewriter":
+            return .custom("AmericanTypewriter-Bold", size: size)
+        case "system":
+            return .system(size: size, weight: .bold)
+        default:
+            return .custom("Together-KwonJungae", size: size)
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 4) {
@@ -53,21 +67,21 @@ struct StreakWidgetView: View {
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(purple)
                 Text("Streak")
-                    .font(.custom("Together-KwonJungae", size: 13))
+                    .font(widgetFont(13))
                     .foregroundStyle(gray)
             }
 
             Text("\(entry.streak)")
-                .font(.custom("Together-KwonJungae", size: 44))
+                .font(widgetFont(44))
                 .foregroundStyle(ink)
 
             if entry.todayCount == 0 {
                 Text("No clips yet today")
-                    .font(.custom("Together-KwonJungae", size: 11))
+                    .font(widgetFont(11))
                     .foregroundStyle(gray)
             } else {
                 Text("\(entry.todayCount) clips today")
-                    .font(.custom("Together-KwonJungae", size: 11))
+                    .font(widgetFont(11))
                     .foregroundStyle(gray)
             }
         }

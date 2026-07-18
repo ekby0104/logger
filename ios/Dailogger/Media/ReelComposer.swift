@@ -430,9 +430,16 @@ enum ReelComposer {
 /// translucent blog panel.
 enum ReelOverlayRenderer {
     private static func font(_ size: CGFloat) -> UIFont {
-        UIFont(name: "Together-KwonJungae", size: size)
-            ?? UIFont(name: "ChalkboardSE-Bold", size: size)
-            ?? UIFont.boldSystemFont(ofSize: size)
+        switch HLFontChoice.current {
+        case .kwonjungae:
+            return UIFont(name: "Together-KwonJungae", size: size)
+                ?? UIFont.boldSystemFont(ofSize: size)
+        case .typewriter:
+            return UIFont(name: "AmericanTypewriter-Bold", size: size)
+                ?? UIFont.boldSystemFont(ofSize: size)
+        case .system:
+            return UIFont.boldSystemFont(ofSize: size)
+        }
     }
 
     private static func lineWidth(_ fontSize: CGFloat) -> CGFloat {

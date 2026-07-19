@@ -316,9 +316,7 @@ final class AppModel {
     func saveMoment(context: ModelContext) {
         // Editing an existing moment: update it in place.
         if let editing = editingMoment {
-            if !draftCaption.isEmpty {
-                editing.caption = draftCaption
-            }
+            editing.caption = draftCaption
             editing.mood = draftMood
             resetCapture()
             viewerMoment = nil
@@ -345,12 +343,8 @@ final class AppModel {
         let moment = Moment(
             id: id,
             createdAt: .now,
-            title: draftCaption.isEmpty
-                ? String(localized: "New moment")
-                : String(draftCaption.prefix(14)),
-            caption: draftCaption.isEmpty
-                ? String(localized: "A moment just captured.")
-                : draftCaption,
+            title: String(draftCaption.prefix(14)),
+            caption: draftCaption,
             mood: draftMood,
             duration: seconds,
             placeName: currentPlaceName ?? String(localized: "Somewhere today"),

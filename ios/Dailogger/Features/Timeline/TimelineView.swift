@@ -152,13 +152,15 @@ private struct TimelineEntry: View {
                         .padding(10)
                     }
 
-                Text(moment.caption)
-                    .font(.hl(15))
-                    .foregroundStyle(HL.ink)
-                    .lineLimit(3)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(EdgeInsets(top: 12, leading: 14, bottom: 14, trailing: 14))
+                if !moment.caption.isEmpty {
+                    Text(moment.caption)
+                        .font(.hl(15))
+                        .foregroundStyle(HL.ink)
+                        .lineLimit(3)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(EdgeInsets(top: 12, leading: 14, bottom: 14, trailing: 14))
+                }
             }
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }

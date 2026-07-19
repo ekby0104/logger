@@ -132,11 +132,13 @@ struct MomentRow: View {
                     Text(moment.timeLabel)
                         .font(.hl(12))
                         .foregroundStyle(HL.gray)
-                    Text(moment.caption)
-                        .font(.hl(15))
-                        .foregroundStyle(HL.ink)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
+                    if !moment.caption.isEmpty {
+                        Text(moment.caption)
+                            .font(.hl(15))
+                            .foregroundStyle(HL.ink)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                    }
                     HStack(spacing: 4) {
                         Image(systemName: "mappin.and.ellipse")
                             .font(.system(size: 11, weight: .bold))

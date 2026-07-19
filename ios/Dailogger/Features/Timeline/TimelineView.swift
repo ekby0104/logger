@@ -5,14 +5,23 @@ struct TimelineView: View {
     @Environment(AppModel.self) private var model
     @Query(sort: \Moment.createdAt) private var allMoments: [Moment]
 
-    /// The timeline is headed with today's date and hour-only labels, so it
-    /// only makes sense scoped to today's moments.
-    private var moments: [Moment] {
-        allMoments.filter { Calendar.current.isDateInToday($0.createdAt) }
+    /// Every recorded day, newest day first; moments inside a day stay in
+    /// time order so each day reads top-to-bottom like a diary entry.
+    private var days: [(date: Date, moments: [Moment])] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: allMoments) {
+            calendar.startOfDay(for: $0.createdAt)
+        }
+        return grouped.keys.sorted(by: >).map { date in
+            (date: date, moments: grouped[date] ?? [])
+        }
     }
 
-    private var dateLabel: String {
-        Date.now.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
+    private func dayTitle(_ date: Date) -> String {
+        if Calendar.current.isDateInToday(date) {
+            return String(localized: "Today")
+        }
+        return date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
     }
 
     var body: some View {
@@ -21,23 +30,31 @@ struct TimelineView: View {
                 Text("Timeline")
                     .font(.hl(27))
                     .foregroundStyle(HL.ink)
-                Text("\(dateLabel) · \(moments.count) moments")
+                Text("\(allMoments.count) moments")
                     .font(.hlRegular(13))
                     .foregroundStyle(HL.gray)
                     .padding(.top, 3)
                     .padding(.bottom, 22)
 
-                if moments.isEmpty {
+                if allMoments.isEmpty {
                     EmptyMomentsCard()
                 } else {
-                    ZStack(alignment: .topLeading) {
-                        VerticalDashedLine()
-                            .padding(.leading, 46)
-                            .padding(.vertical, 8)
+                    VStack(alignment: .leading, spacing: 26) {
+                        ForEach(days, id: \.date) { day in
+                            VStack(alignment: .leading, spacing: 14) {
+                                dayHeader(day.date)
 
-                        VStack(spacing: 20) {
-                            ForEach(moments) { moment in
-                                TimelineEntry(moment: moment)
+                                ZStack(alignment: .topLeading) {
+                                    VerticalDashedLine()
+                                        .padding(.leading, 46)
+                                        .padding(.vertical, 8)
+
+                                    VStack(spacing: 20) {
+                                        ForEach(day.moments) { moment in
+                                            TimelineEntry(moment: moment)
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -48,6 +65,18 @@ struct TimelineView: View {
             .padding(.bottom, 120)
         }
         .scrollIndicators(.hidden)
+    }
+
+    private func dayHeader(_ date: Date) -> some View {
+        Text(dayTitle(date))
+            .font(.hl(13))
+            .foregroundStyle(HL.ink)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background {
+                Capsule().fill(.white)
+                Capsule().strokeBorder(HL.ink, lineWidth: 2)
+            }
     }
 }
 

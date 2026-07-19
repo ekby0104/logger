@@ -43,9 +43,9 @@ enum ReelComposer {
 
         var cursor = CMTime.zero
         var segments: [Segment] = []
-        var sourceTransform = CGAffineTransform.identity
-        var sourceSize = CGSize(width: 1080, height: 1920)
+        var renderSize = CGSize(width: 1080, height: 1920)
         var isFirst = true
+        let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: videoTrack)
 
         for clip in clips {
             let asset = AVURLAsset(url: clip.url)
@@ -53,11 +53,34 @@ enum ReelComposer {
             let range = CMTimeRange(start: .zero, duration: duration)
             if let track = try await asset.loadTracks(withMediaType: .video).first {
                 try videoTrack.insertTimeRange(range, of: track, at: cursor)
+
+                // Each clip carries its own orientation: camera clips are
+                // physically portrait (identity transform), library imports
+                // are usually landscape pixels + a rotate transform. Apply
+                // the clip's transform, then aspect-fill it into the render
+                // frame, keyed to this segment's start time.
+                let transform = try await track.load(.preferredTransform)
+                let natural = try await track.load(.naturalSize)
+                let rect = CGRect(origin: .zero, size: natural).applying(transform)
+                let display = CGSize(width: abs(rect.width), height: abs(rect.height))
                 if isFirst {
-                    sourceTransform = try await track.load(.preferredTransform)
-                    sourceSize = try await track.load(.naturalSize)
+                    renderSize = display
                     isFirst = false
                 }
+                let originFix = CGAffineTransform(
+                    translationX: rect.minX < 0 ? -rect.minX : 0,
+                    y: rect.minY < 0 ? -rect.minY : 0
+                )
+                let fill = max(renderSize.width / display.width, renderSize.height / display.height)
+                let centering = CGAffineTransform(
+                    translationX: (renderSize.width - display.width * fill) / 2,
+                    y: (renderSize.height - display.height * fill) / 2
+                )
+                let combined = transform
+                    .concatenating(originFix)
+                    .concatenating(CGAffineTransform(scaleX: fill, y: fill))
+                    .concatenating(centering)
+                layerInstruction.setTransform(combined, at: cursor)
             }
             if let track = try await asset.loadTracks(withMediaType: .audio).first {
                 try? audioTrack?.insertTimeRange(range, of: track, at: cursor)
@@ -66,8 +89,6 @@ enum ReelComposer {
             cursor = cursor + duration
         }
 
-        let transformed = CGRect(origin: .zero, size: sourceSize).applying(sourceTransform)
-        let renderSize = CGSize(width: abs(transformed.width), height: abs(transformed.height))
         let total = cursor
         let totalSeconds = CMTimeGetSeconds(total)
 
@@ -77,12 +98,6 @@ enum ReelComposer {
 
         let instruction = AVMutableVideoCompositionInstruction()
         instruction.timeRange = CMTimeRange(start: .zero, duration: total)
-        let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: videoTrack)
-        let originFix = CGAffineTransform(
-            translationX: transformed.minX < 0 ? -transformed.minX : 0,
-            y: transformed.minY < 0 ? -transformed.minY : 0
-        )
-        layerInstruction.setTransform(sourceTransform.concatenating(originFix), at: .zero)
         instruction.layerInstructions = [layerInstruction]
         videoComposition.instructions = [instruction]
 

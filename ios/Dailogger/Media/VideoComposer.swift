@@ -59,6 +59,111 @@ enum VideoComposer {
         return outputURL
     }
 
+    /// Cuts `duration` seconds out of a video starting at `start`.
+    static func trim(url: URL, start: Double, duration: Double) async throws -> URL {
+        let asset = AVURLAsset(url: url)
+        guard let export = AVAssetExportSession(
+            asset: asset,
+            presetName: AVAssetExportPresetHighestQuality
+        ) else { throw VideoComposerError.exportFailed }
+
+        let outputURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("trim-\(UUID().uuidString).mov")
+        export.outputURL = outputURL
+        export.outputFileType = .mov
+        export.timeRange = CMTimeRange(
+            start: CMTime(seconds: max(start, 0), preferredTimescale: 600),
+            duration: CMTime(seconds: duration, preferredTimescale: 600)
+        )
+        await export.export()
+        guard export.status == .completed else {
+            throw export.error ?? VideoComposerError.exportFailed
+        }
+        return outputURL
+    }
+
+    /// Renders a photo as a short still video clip (portrait 1080×1920,
+    /// aspect-fill) so imported pictures flow through the same pipeline as
+    /// recorded moments (viewer, reels, thumbnails).
+    static func stillVideo(from image: UIImage, duration: Double) async throws -> URL {
+        let size = CGSize(width: 1080, height: 1920)
+        let frame = UIGraphicsImageRenderer(size: size, format: .init()).image { _ in
+            let scale = max(size.width / image.size.width, size.height / image.size.height)
+            let drawSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+            image.draw(in: CGRect(
+                x: (size.width - drawSize.width) / 2,
+                y: (size.height - drawSize.height) / 2,
+                width: drawSize.width,
+                height: drawSize.height
+            ))
+        }
+        guard let cgImage = frame.cgImage,
+              let buffer = pixelBuffer(from: cgImage, size: size) else {
+            throw VideoComposerError.exportFailed
+        }
+
+        let outputURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("photo-\(UUID().uuidString).mov")
+        let writer = try AVAssetWriter(outputURL: outputURL, fileType: .mov)
+        let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
+            AVVideoCodecKey: AVVideoCodecType.h264,
+            AVVideoWidthKey: size.width,
+            AVVideoHeightKey: size.height
+        ])
+        input.expectsMediaDataInRealTime = false
+        let adaptor = AVAssetWriterInputPixelBufferAdaptor(
+            assetWriterInput: input, sourcePixelBufferAttributes: nil
+        )
+        writer.add(input)
+        writer.startWriting()
+        writer.startSession(atSourceTime: .zero)
+
+        let end = CMTime(seconds: duration, preferredTimescale: 600)
+        let lastFrame = CMTime(seconds: max(duration - 1.0 / 30, 0), preferredTimescale: 600)
+        for time in [CMTime.zero, lastFrame] {
+            while !input.isReadyForMoreMediaData {
+                try await Task.sleep(for: .milliseconds(10))
+            }
+            adaptor.append(buffer, withPresentationTime: time)
+        }
+        input.markAsFinished()
+        writer.endSession(atSourceTime: end)
+        await writer.finishWriting()
+        guard writer.status == .completed else {
+            throw writer.error ?? VideoComposerError.exportFailed
+        }
+        return outputURL
+    }
+
+    private static func pixelBuffer(from cgImage: CGImage, size: CGSize) -> CVPixelBuffer? {
+        var buffer: CVPixelBuffer?
+        let attributes: [CFString: Any] = [
+            kCVPixelBufferCGImageCompatibilityKey: true,
+            kCVPixelBufferCGBitmapContextCompatibilityKey: true
+        ]
+        CVPixelBufferCreate(
+            kCFAllocatorDefault,
+            Int(size.width), Int(size.height),
+            kCVPixelFormatType_32ARGB,
+            attributes as CFDictionary,
+            &buffer
+        )
+        guard let buffer else { return nil }
+
+        CVPixelBufferLockBaseAddress(buffer, [])
+        defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
+        guard let context = CGContext(
+            data: CVPixelBufferGetBaseAddress(buffer),
+            width: Int(size.width), height: Int(size.height),
+            bitsPerComponent: 8,
+            bytesPerRow: CVPixelBufferGetBytesPerRow(buffer),
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue
+        ) else { return nil }
+        context.draw(cgImage, in: CGRect(origin: .zero, size: size))
+        return buffer
+    }
+
     static func thumbnail(for url: URL) async -> UIImage? {
         let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
         generator.appliesPreferredTrackTransform = true

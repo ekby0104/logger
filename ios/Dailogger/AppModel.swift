@@ -14,9 +14,12 @@ final class AppModel {
     }
 
     enum Overlay: String, Identifiable {
-        case camera, edit, viewer, blog
+        case camera, edit, viewer, blog, trim
         var id: String { rawValue }
     }
+
+    /// Clips are capped at this length, both recorded and imported.
+    static let maxClipSeconds = 5
 
     var tab: Tab = .today
     var overlay: Overlay?
@@ -33,6 +36,15 @@ final class AppModel {
     var cameraUnavailable = false
     var cameraPermissionDenied = false
     var segmentURLs: [URL] = []
+    var zoomLevel: CGFloat = 1
+    var hasUltraWide = false
+    var isTorchOn = false
+
+    // Library import
+    var isImporting = false
+    /// Video picked from the library that is longer than the clip limit and
+    /// needs trimming before it becomes a draft.
+    var trimVideoURL: URL?
 
     // Location
     @ObservationIgnored let location = LocationService()
@@ -71,7 +83,13 @@ final class AppModel {
         camera.onReady = { [weak self] in self?.cameraReady = true }
         camera.onUnavailable = { [weak self] in self?.cameraUnavailable = true }
         camera.onPermissionDenied = { [weak self] in self?.cameraPermissionDenied = true }
-        camera.onFlipped = { [weak self] isFront in self?.isFrontCamera = isFront }
+        camera.onFlipped = { [weak self] isFront in
+            self?.isFrontCamera = isFront
+            if isFront { self?.isTorchOn = false } // no torch on the front camera
+        }
+        camera.onZoomCapability = { [weak self] hasUltraWide in
+            self?.hasUltraWide = hasUltraWide
+        }
         camera.onSegmentFinished = { [weak self] url in
             self?.segmentURLs.append(url)
             self?.mergeWhenReady()
@@ -95,6 +113,9 @@ final class AppModel {
     func openCamera() {
         resetCapture()
         draftMood = .calm
+        zoomLevel = 1
+        isTorchOn = false
+        camera.setZoom(1)
         overlay = .camera
         location.requestPlace()
     }
@@ -133,10 +154,25 @@ final class AppModel {
             isRecording = false
             if cameraReady { camera.stopRecording() }
         } else {
+            let remaining = Self.maxClipSeconds - recordedSeconds
+            guard remaining > 0 else {
+                flashToast(String(localized: "Clips are up to 5 seconds"))
+                return
+            }
             isRecording = true
-            if cameraReady { camera.startRecording() }
+            if cameraReady {
+                // File-level backstop slightly above the timer cut so the
+                // UI stop lands first in the normal case.
+                camera.setMaxSegmentDuration(Double(remaining) + 0.4)
+                camera.startRecording()
+            }
             timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-                self?.elapsed += 1
+                guard let self else { return }
+                self.elapsed += 1
+                if self.recordedSeconds >= Self.maxClipSeconds, self.isRecording {
+                    self.toggleRecord()
+                    self.flashToast(String(localized: "Clips are up to 5 seconds"))
+                }
             }
         }
     }
@@ -147,6 +183,18 @@ final class AppModel {
         } else {
             isFrontCamera.toggle()
         }
+    }
+
+    func setZoom(_ level: CGFloat) {
+        zoomLevel = level
+        camera.setZoom(level)
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+
+    func toggleTorch() {
+        isTorchOn.toggle()
+        camera.setTorch(isTorchOn)
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
 
     func goToEdit() {
@@ -189,6 +237,78 @@ final class AppModel {
             }
             self?.isMerging = false
         }
+    }
+
+    // MARK: - Library import
+
+    func importPickedImage(_ image: UIImage) {
+        guard !isImporting else { return }
+        isImporting = true
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                let url = try await VideoComposer.stillVideo(from: image, duration: 3)
+                await self.startImportedDraft(url: url)
+            } catch {
+                self.flashToast(String(localized: "Couldn't load that item"))
+            }
+            self.isImporting = false
+        }
+    }
+
+    func importPickedVideo(_ url: URL) {
+        guard !isImporting else { return }
+        isImporting = true
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            let seconds = (try? await AVURLAsset(url: url).load(.duration))?.seconds ?? 0
+            if seconds <= 0 {
+                self.flashToast(String(localized: "Couldn't load that item"))
+            } else if seconds > Double(Self.maxClipSeconds) + 0.05 {
+                // Longer than the clip limit — pick the 5 seconds to keep.
+                self.trimVideoURL = url
+                self.overlay = .trim
+            } else {
+                await self.startImportedDraft(url: url)
+            }
+            self.isImporting = false
+        }
+    }
+
+    func cancelTrim() {
+        trimVideoURL = nil
+        overlay = .camera
+    }
+
+    func confirmTrim(start: Double) {
+        guard let url = trimVideoURL, !isImporting else { return }
+        isImporting = true
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                let trimmed = try await VideoComposer.trim(
+                    url: url, start: start, duration: Double(Self.maxClipSeconds)
+                )
+                self.trimVideoURL = nil
+                await self.startImportedDraft(url: trimmed)
+            } catch {
+                self.flashToast(String(localized: "Couldn't load that item"))
+            }
+            self.isImporting = false
+        }
+    }
+
+    /// Puts an imported clip into the normal draft pipeline and opens Edit.
+    @MainActor
+    private func startImportedDraft(url: URL) async {
+        resetCapture()
+        draftVideoTempURL = url
+        if let duration = try? await AVURLAsset(url: url).load(.duration),
+           duration.seconds.isFinite, duration.seconds > 0 {
+            draftDuration = duration.seconds
+        }
+        draftThumbnail = await VideoComposer.thumbnail(for: url)
+        overlay = .edit
     }
 
     // MARK: - Saving

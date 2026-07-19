@@ -451,6 +451,56 @@
         }
       }
     },
+    "Clips are up to 5 seconds": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "클립은 최대 5초까지 찍을 수 있어요"
+          }
+        }
+      }
+    },
+    "Couldn't load that item": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "항목을 불러오지 못했어요"
+          }
+        }
+      }
+    },
+    "Trim to 5 seconds": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5초로 자르기"
+          }
+        }
+      }
+    },
+    "Keep 5 seconds starting at %@": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@부터 5초를 사용해요"
+          }
+        }
+      }
+    },
+    "Use this part": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이 구간 사용하기"
+          }
+        }
+      }
+    },
     "Sample data removed": {
       "localizations": {
         "ko": {

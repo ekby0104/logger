@@ -14,11 +14,19 @@ final class CameraService: NSObject, AVCaptureFileOutputRecordingDelegate {
     var onPermissionDenied: (() -> Void)?
     var onSegmentFinished: ((URL) -> Void)?
     var onFlipped: ((Bool) -> Void)?
+    /// Reports whether the current camera can go ultra-wide (0.5x).
+    var onZoomCapability: ((Bool) -> Void)?
 
     private let sessionQueue = DispatchQueue(label: "com.dailogger.camera.session")
     private let movieOutput = AVCaptureMovieFileOutput()
     private var videoInput: AVCaptureDeviceInput?
     private var isConfigured = false
+    /// Raw zoom factor that equals "1x" on the current device. On a virtual
+    /// dual-wide camera raw 1.0 is the ultra-wide, and the first switch-over
+    /// factor (usually 2.0) is the main wide lens.
+    private var oneXFactor: CGFloat = 1
+    /// Display zoom the UI asked for (0.5 / 1 / 2), reapplied after flips.
+    private var desiredDisplayZoom: CGFloat = 1
 
     // MARK: - Lifecycle
 
@@ -66,13 +74,12 @@ final class CameraService: NSObject, AVCaptureFileOutputRecordingDelegate {
             session.beginConfiguration()
             session.sessionPreset = .high
 
-            if let device = AVCaptureDevice.default(
-                .builtInWideAngleCamera, for: .video, position: .back
-            ),
+            if let device = Self.backCamera(),
                 let input = try? AVCaptureDeviceInput(device: device),
                 session.canAddInput(input) {
                 session.addInput(input)
                 videoInput = input
+                configureZoomBaseline(for: device)
             }
             if let microphone = AVCaptureDevice.default(for: .audio),
                let microphoneInput = try? AVCaptureDeviceInput(device: microphone),
@@ -107,14 +114,79 @@ final class CameraService: NSObject, AVCaptureFileOutputRecordingDelegate {
 
     // MARK: - Controls
 
+    /// The back camera: prefers the virtual dual-wide device so zooming can
+    /// reach the ultra-wide (0.5x) lens; falls back to the plain wide camera.
+    private static func backCamera() -> AVCaptureDevice? {
+        AVCaptureDevice.default(.builtInDualWideCamera, for: .video, position: .back)
+            ?? AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+    }
+
+    /// Establishes what "1x" means on this device and applies the desired zoom.
+    /// Must be called on the session queue.
+    private func configureZoomBaseline(for device: AVCaptureDevice) {
+        oneXFactor = device.virtualDeviceSwitchOverVideoZoomFactors.first
+            .map { CGFloat(truncating: $0) } ?? 1
+        let hasUltraWide = device.position == .back && oneXFactor > 1
+        applyZoom(desiredDisplayZoom, to: device)
+        DispatchQueue.main.async { self.onZoomCapability?(hasUltraWide) }
+    }
+
+    private func applyZoom(_ display: CGFloat, to device: AVCaptureDevice) {
+        guard device.position == .back else { return }
+        let raw = min(
+            max(display * oneXFactor, device.minAvailableVideoZoomFactor),
+            device.maxAvailableVideoZoomFactor
+        )
+        do {
+            try device.lockForConfiguration()
+            device.videoZoomFactor = raw
+            device.unlockForConfiguration()
+        } catch {
+            log.warning("zoom failed: \(error.localizedDescription)")
+        }
+    }
+
+    /// display: 0.5 / 1 / 2 as shown in the UI.
+    func setZoom(_ display: CGFloat) {
+        sessionQueue.async { [self] in
+            desiredDisplayZoom = display
+            guard let device = videoInput?.device else { return }
+            applyZoom(display, to: device)
+        }
+    }
+
+    func setTorch(_ on: Bool) {
+        sessionQueue.async { [self] in
+            guard let device = videoInput?.device, device.hasTorch else { return }
+            do {
+                try device.lockForConfiguration()
+                device.torchMode = on ? .on : .off
+                device.unlockForConfiguration()
+            } catch {
+                log.warning("torch failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Hard backstop so a segment file can never exceed the app's clip limit
+    /// even if the UI timer misses the stop.
+    func setMaxSegmentDuration(_ seconds: Double) {
+        sessionQueue.async { [self] in
+            movieOutput.maxRecordedDuration = seconds.isFinite && seconds > 0
+                ? CMTime(seconds: seconds, preferredTimescale: 600)
+                : .invalid
+        }
+    }
+
     func flip() {
         sessionQueue.async { [self] in
             guard let current = videoInput else { return }
             let newPosition: AVCaptureDevice.Position =
                 current.device.position == .back ? .front : .back
-            guard let device = AVCaptureDevice.default(
-                .builtInWideAngleCamera, for: .video, position: newPosition
-            ),
+            let newDevice = newPosition == .back
+                ? Self.backCamera()
+                : AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
+            guard let device = newDevice,
                 let input = try? AVCaptureDeviceInput(device: device) else { return }
 
             session.beginConfiguration()
@@ -127,6 +199,7 @@ final class CameraService: NSObject, AVCaptureFileOutputRecordingDelegate {
             }
             applyPortraitRotation()
             session.commitConfiguration()
+            configureZoomBaseline(for: videoInput?.device ?? device)
 
             let isFront = newPosition == .front
             DispatchQueue.main.async { self.onFlipped?(isFront) }

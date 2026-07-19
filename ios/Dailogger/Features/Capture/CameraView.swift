@@ -1,9 +1,30 @@
+import AVFoundation
+import PhotosUI
 import SwiftUI
+import UniformTypeIdentifiers
+
+/// A library video copied into our temp directory so it survives the picker.
+struct PickedVideo: Transferable {
+    let url: URL
+
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(contentType: .movie) {
+            SentTransferredFile($0.url)
+        } importing: { received in
+            let ext = received.file.pathExtension.isEmpty ? "mov" : received.file.pathExtension
+            let copy = FileManager.default.temporaryDirectory
+                .appendingPathComponent("import-\(UUID().uuidString).\(ext)")
+            try FileManager.default.copyItem(at: received.file, to: copy)
+            return Self(url: copy)
+        }
+    }
+}
 
 /// Camera capture screen: live AVFoundation preview + segment recording.
 /// Falls back to mock recording (timer only) on Simulator / no camera.
 struct CameraView: View {
     @Environment(AppModel.self) private var model
+    @State private var pickedItem: PhotosPickerItem?
 
     var body: some View {
         ZStack {
@@ -37,12 +58,50 @@ struct CameraView: View {
                 bottomControls
             }
             .padding(.horizontal, 20)
+
+            if model.isImporting {
+                HL.ink.opacity(0.4).ignoresSafeArea()
+                ProgressView()
+                    .tint(.white)
+                    .scaleEffect(1.4)
+            }
         }
         .overlay(alignment: .bottom) {
             ToastView()
         }
         .onAppear { model.camera.start() }
         .onDisappear { model.camera.stop() }
+        .onChange(of: pickedItem) { loadPickedItem() }
+    }
+
+    /// Routes a library selection: videos go through the 5-second gate
+    /// (trim screen when longer), photos become short still clips.
+    private func loadPickedItem() {
+        guard let item = pickedItem else { return }
+        pickedItem = nil
+        let isVideo = item.supportedContentTypes.contains { $0.conforms(to: .movie) }
+        Task { @MainActor in
+            if isVideo {
+                if let picked = try? await item.loadTransferable(type: PickedVideo.self) {
+                    model.importPickedVideo(picked.url)
+                } else {
+                    model.flashToast(String(localized: "Couldn't load that item"))
+                }
+            } else {
+                if let data = try? await item.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    model.importPickedImage(image)
+                } else {
+                    model.flashToast(String(localized: "Couldn't load that item"))
+                }
+            }
+        }
+    }
+
+    /// Total recorded time against the 5-second clip cap.
+    private var recordTimeLabel: String {
+        let total = min(model.recordedSeconds, AppModel.maxClipSeconds)
+        return "0:0\(total) / 0:0\(AppModel.maxClipSeconds)"
     }
 
     private var locationPillLabel: String {
@@ -105,7 +164,7 @@ struct CameraView: View {
                     Circle()
                         .fill(model.isRecording ? HL.red : Color.white.opacity(0.6))
                         .frame(width: 10, height: 10)
-                    Text(model.elapsedLabel)
+                    Text(recordTimeLabel)
                         .font(.hl(15))
                         .foregroundStyle(.white)
                         .monospacedDigit()
@@ -134,8 +193,18 @@ struct CameraView: View {
 
             Spacer()
 
-            cameraIconButton(systemImage: "arrow.triangle.2.circlepath.camera") {
-                model.flipCamera()
+            VStack(spacing: 10) {
+                cameraIconButton(systemImage: "arrow.triangle.2.circlepath.camera") {
+                    model.flipCamera()
+                }
+                if model.cameraReady && !model.isFrontCamera {
+                    cameraIconButton(
+                        systemImage: model.isTorchOn ? "bolt.fill" : "bolt.slash.fill",
+                        tint: model.isTorchOn ? .yellow : .white
+                    ) {
+                        model.toggleTorch()
+                    }
+                }
             }
         }
     }
@@ -165,17 +234,28 @@ struct CameraView: View {
 
     private var bottomControls: some View {
         VStack(spacing: 18) {
+            if model.cameraReady && !model.isFrontCamera {
+                zoomControls
+            }
+
             HStack {
-                Image(systemName: "photo.on.rectangle")
-                    .font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 50, height: 50)
-                    .background {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(HL.ink.opacity(0.5))
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .strokeBorder(.white, lineWidth: 2)
-                    }
+                PhotosPicker(
+                    selection: $pickedItem,
+                    matching: .any(of: [.images, .videos])
+                ) {
+                    Image(systemName: "photo.on.rectangle")
+                        .font(.system(size: 19, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 50, height: 50)
+                        .background {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(HL.ink.opacity(0.5))
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .strokeBorder(.white, lineWidth: 2)
+                        }
+                }
+                .buttonStyle(.plain)
+                .disabled(model.isRecording)
 
                 Spacer()
 
@@ -188,6 +268,35 @@ struct CameraView: View {
             .padding(.horizontal, 14)
         }
         .padding(.bottom, 20)
+    }
+
+    private var zoomControls: some View {
+        HStack(spacing: 8) {
+            if model.hasUltraWide {
+                zoomChip(0.5, label: ".5x")
+            }
+            zoomChip(1, label: "1x")
+            zoomChip(2, label: "2x")
+        }
+    }
+
+    private func zoomChip(_ level: CGFloat, label: String) -> some View {
+        let selected = model.zoomLevel == level
+        return Button {
+            model.setZoom(level)
+        } label: {
+            Text(label)
+                .font(.hl(12))
+                .foregroundStyle(selected ? HL.ink : .white)
+                .frame(width: 40, height: 40)
+                .background {
+                    Circle().fill(selected ? Color.white : HL.ink.opacity(0.45))
+                    Circle().strokeBorder(
+                        selected ? HL.ink : .white.opacity(0.7), lineWidth: 2
+                    )
+                }
+        }
+        .buttonStyle(.plain)
     }
 
     private var recordButton: some View {
@@ -248,12 +357,13 @@ struct CameraView: View {
 
     private func cameraIconButton(
         systemImage: String,
+        tint: Color = .white,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(.system(size: 17, weight: .bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(tint)
                 .frame(width: 42, height: 42)
                 .background {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)

@@ -196,40 +196,26 @@ struct CalendarView: View {
             meta = String(localized: "No records")
         }
 
-        // Tapping the day (header + thumbnails) plays it as a story;
-        // the "Read the blog" row separately opens the blog text.
+        // Tapping the day header plays it as a story; each thumbnail opens
+        // the viewer at that moment, and with more than four moments the
+        // strip scrolls horizontally. The "Read the blog" row opens the text.
         return VStack(alignment: .leading, spacing: 13) {
             Button {
                 model.openDayStory(for: selectedDate, context: context)
             } label: {
-                VStack(alignment: .leading, spacing: 13) {
-                    HStack {
-                        Text(selectedDate.formatted(.dateTime.month(.wide).day()))
-                            .font(.hl(17))
-                            .foregroundStyle(HL.ink)
-                        Spacer()
-                        Text(meta)
-                            .font(.hlRegular(12.5))
-                            .foregroundStyle(HL.gray)
-                    }
-
-                    HStack(spacing: 7) {
-                        ForEach(Array(selectedDayMoments.prefix(4))) { moment in
-                            MomentThumb(moment: moment, radius: 10)
-                                .aspectRatio(9.0 / 16.0, contentMode: .fit)
-                                .frame(maxWidth: .infinity)
-                        }
-                        if selectedDayMoments.count < 4 {
-                            ForEach(0..<(4 - min(selectedDayMoments.count, 4)), id: \.self) { _ in
-                                PlaceholderBox(radius: 10)
-                                    .aspectRatio(9.0 / 16.0, contentMode: .fit)
-                                    .frame(maxWidth: .infinity)
-                            }
-                        }
-                    }
+                HStack {
+                    Text(selectedDate.formatted(.dateTime.month(.wide).day()))
+                        .font(.hl(17))
+                        .foregroundStyle(HL.ink)
+                    Spacer()
+                    Text(meta)
+                        .font(.hlRegular(12.5))
+                        .foregroundStyle(HL.gray)
                 }
             }
             .buttonStyle(.plain)
+
+            thumbnailStrip
 
             if let log, log.blogText != nil {
                 Button {
@@ -250,5 +236,47 @@ struct CalendarView: View {
         }
         .padding(16)
         .hardCard(radius: 18)
+    }
+
+    /// Four thumbnails fill the row; more than four scroll horizontally,
+    /// snapping per cell. Empty slots keep the four-column rhythm.
+    private var thumbnailStrip: some View {
+        Group {
+            if selectedDayMoments.count > 4 {
+                ScrollView(.horizontal) {
+                    HStack(spacing: 7) {
+                        ForEach(selectedDayMoments) { moment in
+                            thumbCell(moment)
+                                .containerRelativeFrame(.horizontal, count: 4, spacing: 7)
+                        }
+                    }
+                    .scrollTargetLayout()
+                }
+                .scrollIndicators(.hidden)
+                .scrollTargetBehavior(.viewAligned)
+            } else {
+                HStack(spacing: 7) {
+                    ForEach(selectedDayMoments) { moment in
+                        thumbCell(moment)
+                            .frame(maxWidth: .infinity)
+                    }
+                    ForEach(0..<(4 - selectedDayMoments.count), id: \.self) { _ in
+                        PlaceholderBox(radius: 10)
+                            .aspectRatio(9.0 / 16.0, contentMode: .fit)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+            }
+        }
+    }
+
+    private func thumbCell(_ moment: Moment) -> some View {
+        Button {
+            model.openViewer(moment)
+        } label: {
+            MomentThumb(moment: moment, radius: 10)
+                .aspectRatio(9.0 / 16.0, contentMode: .fit)
+        }
+        .buttonStyle(.plain)
     }
 }

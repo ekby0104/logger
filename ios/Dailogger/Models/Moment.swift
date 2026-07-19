@@ -82,7 +82,7 @@ final class Moment {
     }
 
     var durationLabel: String {
-        let seconds = Int(duration)
+        let seconds = max(Int(duration.rounded()), 1)
         return "\(seconds / 60):" + String(format: "%02d", seconds % 60)
     }
 }

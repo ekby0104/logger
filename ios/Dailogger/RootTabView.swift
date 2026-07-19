@@ -43,6 +43,7 @@ struct RootTabView: View {
         .task {
             SeedData.insertIfNeeded(context: context)
             model.refreshWidgetAndReminder(context: context)
+            model.remeasureDurations(context: context)
         }
     }
 }

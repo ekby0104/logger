@@ -1,3 +1,4 @@
+import AVFoundation
 import CoreLocation
 import Foundation
 import SwiftData
@@ -42,6 +43,9 @@ final class AppModel {
     var draftCaption = ""
     var draftMood: Mood = .calm
     var draftThumbnail: UIImage?
+    /// Exact length of the merged clip, measured from the file. The on-screen
+    /// timer only counts whole seconds, so it is never used for saving.
+    var draftDuration: TimeInterval?
     var isMerging = false
     /// Non-nil when editing an existing moment (from the viewer) instead of creating a new one.
     var editingMoment: Moment?
@@ -175,6 +179,10 @@ final class AppModel {
             do {
                 let merged = try await VideoComposer.merge(segmentURLs: urls)
                 self?.draftVideoTempURL = merged
+                if let duration = try? await AVURLAsset(url: merged).load(.duration),
+                   duration.seconds.isFinite, duration.seconds > 0 {
+                    self?.draftDuration = duration.seconds
+                }
                 self?.draftThumbnail = await VideoComposer.thumbnail(for: merged)
             } catch {
                 self?.flashToast(String(localized: "Couldn't process the clip"))
@@ -199,8 +207,9 @@ final class AppModel {
             return
         }
 
-        // New moment from the camera flow.
-        let seconds = max(recordedSeconds, 5)
+        // New moment from the camera flow. Prefer the measured length of the
+        // merged file; the whole-second timer count is only a fallback.
+        let seconds = draftDuration ?? TimeInterval(max(recordedSeconds, 1))
         let id = UUID()
 
         var videoName: String?
@@ -223,7 +232,7 @@ final class AppModel {
                 ? String(localized: "A moment just captured.")
                 : draftCaption,
             mood: draftMood,
-            duration: TimeInterval(seconds),
+            duration: seconds,
             placeName: currentPlaceName ?? String(localized: "Somewhere today"),
             latitude: currentCoordinate?.latitude,
             longitude: currentCoordinate?.longitude,
@@ -351,6 +360,24 @@ final class AppModel {
         return (try? context.fetch(descriptor))?.first
     }
 
+    /// Fix-up for moments saved before durations were measured from the
+    /// file (they were timer-estimated with a 5-second floor): re-reads each
+    /// clip's real length and updates the stored value where it drifted.
+    func remeasureDurations(context: ModelContext) {
+        let all = (try? context.fetch(FetchDescriptor<Moment>())) ?? []
+        Task { @MainActor in
+            for moment in all {
+                guard let url = moment.videoURL,
+                      let duration = try? await AVURLAsset(url: url).load(.duration)
+                else { continue }
+                let seconds = duration.seconds
+                if seconds.isFinite, seconds > 0, abs(seconds - moment.duration) > 0.5 {
+                    moment.duration = seconds
+                }
+            }
+        }
+    }
+
     /// Recomputes streak/today-count for the widget and reschedules the
     /// daily reminder. Called on launch and whenever moments change.
     func refreshWidgetAndReminder(context: ModelContext) {
@@ -396,6 +423,7 @@ final class AppModel {
         segmentURLs = []
         draftVideoTempURL = nil
         draftThumbnail = nil
+        draftDuration = nil
         draftCaption = ""
         isMerging = false
         editingMoment = nil

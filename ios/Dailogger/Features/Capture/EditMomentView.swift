@@ -14,7 +14,9 @@ struct EditMomentView: View {
         if let editing = model.editingMoment {
             return editing.durationLabel
         }
-        let seconds = max(model.recordedSeconds, 5)
+        // Measured length of the merged clip once it's ready; the rough
+        // timer count fills in while merging.
+        let seconds = Int(model.draftDuration ?? TimeInterval(max(model.recordedSeconds, 1)))
         return "\(seconds / 60):" + String(format: "%02d", seconds % 60)
     }
 

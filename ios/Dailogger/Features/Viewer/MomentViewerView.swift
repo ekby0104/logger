@@ -21,15 +21,17 @@ struct MomentViewerView: View {
 
     /// The story feed is one day: only moments sharing a day with the one
     /// that opened the viewer, so playback never crosses into other days.
+    /// While closing (viewerMoment nil) this is empty — falling back to all
+    /// moments here used to start the oldest day's audio mid-dismissal.
     private var moments: [Moment] {
-        guard let anchor = model.viewerMoment else { return allMoments }
+        guard let anchor = model.viewerMoment else { return [] }
         return allMoments.filter {
             Calendar.current.isDate($0.createdAt, inSameDayAs: anchor.createdAt)
         }
     }
 
     private var current: Moment? {
-        model.viewerMoment ?? moments.first
+        model.viewerMoment
     }
 
     private var currentIndex: Int {

@@ -4,6 +4,9 @@
     "Streak" : {
       "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "스트릭" } } }
     },
+    "Today" : {
+      "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "오늘" } } }
+    },
     "No clips yet today" : {
       "localizations" : { "ko" : { "stringUnit" : { "state" : "translated", "value" : "오늘은 아직 클립이 없어요" } } }
     },

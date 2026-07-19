@@ -40,6 +40,7 @@ struct StreakProvider: TimelineProvider {
 
 struct StreakWidgetView: View {
     let entry: StreakEntry
+    @Environment(\.widgetFamily) private var family
 
     private let ink = Color(red: 0x13 / 255, green: 0x18 / 255, blue: 0x26 / 255)
     private let paper = Color(red: 0xF4 / 255, green: 0xF5 / 255, blue: 0xF7 / 255)
@@ -62,6 +63,17 @@ struct StreakWidgetView: View {
     }
 
     var body: some View {
+        Group {
+            if family == .systemMedium {
+                medium
+            } else {
+                small
+            }
+        }
+        .containerBackground(paper, for: .widget)
+    }
+
+    private var small: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 4) {
                 Image(systemName: "flame.fill")
@@ -76,18 +88,56 @@ struct StreakWidgetView: View {
                 .font(widgetFont(44))
                 .foregroundStyle(ink)
 
-            if entry.todayCount == 0 {
-                Text("No clips yet today")
-                    .font(widgetFont(11))
-                    .foregroundStyle(gray)
-            } else {
-                Text("\(entry.todayCount) clips today")
-                    .font(widgetFont(11))
-                    .foregroundStyle(gray)
-            }
+            todayLine(size: 11)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .containerBackground(paper, for: .widget)
+    }
+
+    private var medium: some View {
+        HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 4) {
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(purple)
+                    Text("Streak")
+                        .font(widgetFont(14))
+                        .foregroundStyle(gray)
+                }
+                Text("\(entry.streak)")
+                    .font(widgetFont(46))
+                    .foregroundStyle(ink)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 4) {
+                    Image(systemName: "video.fill")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(purple)
+                    Text("Today")
+                        .font(widgetFont(14))
+                        .foregroundStyle(gray)
+                }
+                Text("\(entry.todayCount)")
+                    .font(widgetFont(46))
+                    .foregroundStyle(ink)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+
+    private func todayLine(size: CGFloat) -> some View {
+        Group {
+            if entry.todayCount == 0 {
+                Text("No clips yet today")
+            } else {
+                Text("\(entry.todayCount) clips today")
+            }
+        }
+        .font(widgetFont(size))
+        .foregroundStyle(gray)
     }
 }
 
@@ -98,6 +148,6 @@ struct StreakWidget: Widget {
         }
         .configurationDisplayName("Streak")
         .description(String(localized: "Your recording streak at a glance."))
-        .supportedFamilies([.systemSmall])
+        .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

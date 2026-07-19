@@ -77,13 +77,17 @@ struct CalendarView: View {
                 }
                 .padding(.bottom, 8)
 
+                // One ForEach for blanks and days: two ForEach ranges here
+                // produced colliding IDs (blank 1,2 vs day 1,2), which makes
+                // LazyVGrid drop or misplace cells.
                 LazyVGrid(columns: columns, spacing: 6) {
-                    ForEach(0..<leadingBlanks, id: \.self) { _ in
-                        Color.clear
-                            .aspectRatio(0.78, contentMode: .fit)
-                    }
-                    ForEach(Array(1...daysInMonth), id: \.self) { day in
-                        dayCell(day)
+                    ForEach(0..<(leadingBlanks + daysInMonth), id: \.self) { slot in
+                        if slot < leadingBlanks {
+                            Color.clear
+                                .aspectRatio(0.78, contentMode: .fit)
+                        } else {
+                            dayCell(slot - leadingBlanks + 1)
+                        }
                     }
                 }
 

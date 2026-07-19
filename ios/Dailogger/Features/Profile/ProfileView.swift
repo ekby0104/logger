@@ -140,11 +140,20 @@ struct ProfileView: View {
 
     private func archiveCell(_ log: DailyLog) -> some View {
         Button {
-            model.openBlog(log)
+            model.openDayStory(for: log.date, context: context)
         } label: {
             archiveCellContent(log)
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            if log.blogText != nil {
+                Button {
+                    model.openBlog(log)
+                } label: {
+                    Label("Read the blog", systemImage: "book")
+                }
+            }
+        }
     }
 
     /// A clip from the log's day to represent it in the archive grid —

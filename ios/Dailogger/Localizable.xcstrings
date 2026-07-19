@@ -441,6 +441,16 @@
         }
       }
     },
+    "No moments on this day": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이날의 모먼트가 없어요"
+          }
+        }
+      }
+    },
     "Sample data removed": {
       "localizations": {
         "ko": {

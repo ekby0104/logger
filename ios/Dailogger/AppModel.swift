@@ -315,6 +315,19 @@ final class AppModel {
         flashToast(String(localized: "Blog saved"))
     }
 
+    /// Plays a past day as a story: opens the viewer on the day's first
+    /// moment (the viewer scopes navigation to that day). Days with no
+    /// moments fall back to the saved blog text.
+    func openDayStory(for date: Date, context: ModelContext) {
+        if let first = moments(on: date, context: context).first {
+            openViewer(first)
+        } else if let saved = log(for: date, context: context), saved.blogText != nil {
+            openBlog(saved)
+        } else {
+            flashToast(String(localized: "No moments on this day"))
+        }
+    }
+
     /// Opens a saved blog from the archive (Calendar day / Me tab).
     func openBlog(_ log: DailyLog) {
         guard let title = log.blogTitle, let body = log.blogText else {

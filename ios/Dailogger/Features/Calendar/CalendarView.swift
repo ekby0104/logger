@@ -3,6 +3,7 @@ import SwiftData
 
 struct CalendarView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.modelContext) private var context
     @Query(sort: \DailyLog.date) private var logs: [DailyLog]
     @Query(sort: \Moment.createdAt) private var moments: [Moment]
     @State private var monthOffset = 0
@@ -195,36 +196,45 @@ struct CalendarView: View {
             meta = String(localized: "No records")
         }
 
-        return Button {
-            if let log { model.openBlog(log) }
-        } label: {
-            VStack(alignment: .leading, spacing: 13) {
-                HStack {
-                    Text(selectedDate.formatted(.dateTime.month(.wide).day()))
-                        .font(.hl(17))
-                        .foregroundStyle(HL.ink)
-                    Spacer()
-                    Text(meta)
-                        .font(.hlRegular(12.5))
-                        .foregroundStyle(HL.gray)
-                }
-
-                HStack(spacing: 7) {
-                    ForEach(Array(selectedDayMoments.prefix(4))) { moment in
-                        MomentThumb(moment: moment, radius: 10)
-                            .aspectRatio(9.0 / 16.0, contentMode: .fit)
-                            .frame(maxWidth: .infinity)
+        // Tapping the day (header + thumbnails) plays it as a story;
+        // the "Read the blog" row separately opens the blog text.
+        return VStack(alignment: .leading, spacing: 13) {
+            Button {
+                model.openDayStory(for: selectedDate, context: context)
+            } label: {
+                VStack(alignment: .leading, spacing: 13) {
+                    HStack {
+                        Text(selectedDate.formatted(.dateTime.month(.wide).day()))
+                            .font(.hl(17))
+                            .foregroundStyle(HL.ink)
+                        Spacer()
+                        Text(meta)
+                            .font(.hlRegular(12.5))
+                            .foregroundStyle(HL.gray)
                     }
-                    if selectedDayMoments.count < 4 {
-                        ForEach(0..<(4 - min(selectedDayMoments.count, 4)), id: \.self) { _ in
-                            PlaceholderBox(radius: 10)
+
+                    HStack(spacing: 7) {
+                        ForEach(Array(selectedDayMoments.prefix(4))) { moment in
+                            MomentThumb(moment: moment, radius: 10)
                                 .aspectRatio(9.0 / 16.0, contentMode: .fit)
                                 .frame(maxWidth: .infinity)
                         }
+                        if selectedDayMoments.count < 4 {
+                            ForEach(0..<(4 - min(selectedDayMoments.count, 4)), id: \.self) { _ in
+                                PlaceholderBox(radius: 10)
+                                    .aspectRatio(9.0 / 16.0, contentMode: .fit)
+                                    .frame(maxWidth: .infinity)
+                            }
+                        }
                     }
                 }
+            }
+            .buttonStyle(.plain)
 
-                if let log, log.blogText != nil {
+            if let log, log.blogText != nil {
+                Button {
+                    model.openBlog(log)
+                } label: {
                     HStack(spacing: 5) {
                         Image(systemName: "book")
                             .font(.system(size: 12, weight: .bold))
@@ -235,10 +245,10 @@ struct CalendarView: View {
                     }
                     .foregroundStyle(HL.blue)
                 }
+                .buttonStyle(.plain)
             }
-            .padding(16)
         }
-        .buttonStyle(.plain)
+        .padding(16)
         .hardCard(radius: 18)
     }
 }

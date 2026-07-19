@@ -47,9 +47,16 @@ struct ProfileView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 28)
                 } else {
+                    // Computed once per render instead of one full scan of
+                    // all moments per grid cell.
+                    let thumbnails = dayThumbnails
+                    let calendar = Calendar.current
                     LazyVGrid(columns: archiveColumns, spacing: 8) {
                         ForEach(logs) { log in
-                            archiveCell(log)
+                            archiveCell(
+                                log,
+                                thumbnail: thumbnails[calendar.startOfDay(for: log.date)]
+                            )
                         }
                     }
                 }
@@ -138,11 +145,11 @@ struct ProfileView: View {
         .frame(maxWidth: .infinity)
     }
 
-    private func archiveCell(_ log: DailyLog) -> some View {
+    private func archiveCell(_ log: DailyLog, thumbnail: Moment?) -> some View {
         Button {
             model.openDayStory(for: log.date, context: context)
         } label: {
-            archiveCellContent(log)
+            archiveCellContent(log, thumbnail: thumbnail)
         }
         .buttonStyle(.plain)
         .contextMenu {
@@ -156,17 +163,27 @@ struct ProfileView: View {
         }
     }
 
-    /// A clip from the log's day to represent it in the archive grid —
-    /// prefers one that actually has a thumbnail file.
-    private func dayThumbnailMoment(_ log: DailyLog) -> Moment? {
+    /// One representative clip per day (prefers one with a thumbnail file),
+    /// keyed by the day's start so the whole grid shares a single scan.
+    private var dayThumbnails: [Date: Moment] {
         let calendar = Calendar.current
-        let dayMoments = moments.filter { calendar.isDate($0.createdAt, inSameDayAs: log.date) }
-        return dayMoments.first { $0.thumbnailFileName != nil } ?? dayMoments.first
+        var byDay: [Date: Moment] = [:]
+        for moment in moments {
+            let day = calendar.startOfDay(for: moment.createdAt)
+            if let existing = byDay[day] {
+                if existing.thumbnailFileName == nil && moment.thumbnailFileName != nil {
+                    byDay[day] = moment
+                }
+            } else {
+                byDay[day] = moment
+            }
+        }
+        return byDay
     }
 
-    private func archiveCellContent(_ log: DailyLog) -> some View {
+    private func archiveCellContent(_ log: DailyLog, thumbnail: Moment?) -> some View {
         Group {
-            if let moment = dayThumbnailMoment(log) {
+            if let moment = thumbnail {
                 MomentThumb(moment: moment, radius: 12)
             } else {
                 PlaceholderBox(radius: 12)

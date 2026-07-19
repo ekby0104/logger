@@ -45,7 +45,9 @@ struct TimelineView: View {
                 if allMoments.isEmpty {
                     EmptyMomentsCard()
                 } else {
-                    VStack(alignment: .leading, spacing: 26) {
+                    // Lazy so a long history only builds (and loads
+                    // thumbnails for) the days actually scrolled into view.
+                    LazyVStack(alignment: .leading, spacing: 26) {
                         ForEach(days) { day in
                             VStack(alignment: .leading, spacing: 14) {
                                 dayHeader(day.date)

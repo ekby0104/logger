@@ -474,10 +474,13 @@ final class AppModel {
         return (try? context.fetch(descriptor))?.first
     }
 
-    /// Fix-up for moments saved before durations were measured from the
-    /// file (they were timer-estimated with a 5-second floor): re-reads each
-    /// clip's real length and updates the stored value where it drifted.
+    /// One-time fix-up for moments saved before durations were measured
+    /// from the file (they were timer-estimated with a 5-second floor).
+    /// Opening every video is expensive, so after one successful pass a
+    /// flag skips this forever — new saves store the measured length.
     func remeasureDurations(context: ModelContext) {
+        let doneKey = "durationsRemeasured.v1"
+        guard !UserDefaults.standard.bool(forKey: doneKey) else { return }
         let all = (try? context.fetch(FetchDescriptor<Moment>())) ?? []
         Task { @MainActor in
             for moment in all {
@@ -489,6 +492,7 @@ final class AppModel {
                     moment.duration = seconds
                 }
             }
+            UserDefaults.standard.set(true, forKey: doneKey)
         }
     }
 

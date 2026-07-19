@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# Xcode user-specific state (breakpoints, personal schemes, window layout)
+xcuserdata/
+*.xcuserstate
+
+# Build artifacts
+build/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM

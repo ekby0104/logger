@@ -78,6 +78,10 @@ struct MomentThumb: View {
                         RoundedRectangle(cornerRadius: radius, style: .continuous)
                             .strokeBorder(HL.ink, lineWidth: 2)
                     }
+                    // scaledToFill overflows the frame; clipping hides it
+                    // visually but NOT for hit testing, so without this the
+                    // spill steals taps from neighboring views.
+                    .contentShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
             } else {
                 PlaceholderBox(radius: radius)
             }

@@ -5,15 +5,21 @@ struct TimelineView: View {
     @Environment(AppModel.self) private var model
     @Query(sort: \Moment.createdAt) private var allMoments: [Moment]
 
+    private struct DayGroup: Identifiable {
+        let date: Date
+        let moments: [Moment]
+        var id: Date { date }
+    }
+
     /// Every recorded day, newest day first; moments inside a day stay in
     /// time order so each day reads top-to-bottom like a diary entry.
-    private var days: [(date: Date, moments: [Moment])] {
+    private var days: [DayGroup] {
         let calendar = Calendar.current
         let grouped = Dictionary(grouping: allMoments) {
             calendar.startOfDay(for: $0.createdAt)
         }
         return grouped.keys.sorted(by: >).map { date in
-            (date: date, moments: grouped[date] ?? [])
+            DayGroup(date: date, moments: grouped[date] ?? [])
         }
     }
 
@@ -40,7 +46,7 @@ struct TimelineView: View {
                     EmptyMomentsCard()
                 } else {
                     VStack(alignment: .leading, spacing: 26) {
-                        ForEach(days, id: \.date) { day in
+                        ForEach(days) { day in
                             VStack(alignment: .leading, spacing: 14) {
                                 dayHeader(day.date)
 

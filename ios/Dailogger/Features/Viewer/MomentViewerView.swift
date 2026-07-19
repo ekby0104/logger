@@ -205,6 +205,7 @@ struct MomentViewerView: View {
             tearDownPlayer()
             return
         }
+        PlaybackAudio.activate()
         if let player {
             player.pause()
             player.replaceCurrentItem(with: AVPlayerItem(url: url))

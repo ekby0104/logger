@@ -121,6 +121,7 @@ struct TrimVideoView: View {
         if let loaded = try? await asset.load(.duration), loaded.seconds.isFinite {
             duration = loaded.seconds
         }
+        PlaybackAudio.activate()
         let newPlayer = AVPlayer(url: url)
         newPlayer.isMuted = false
         player = newPlayer

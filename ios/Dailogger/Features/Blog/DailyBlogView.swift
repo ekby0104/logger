@@ -376,6 +376,7 @@ private struct ReelPreviewSheet: View {
         }
         .background(HL.camBackground.ignoresSafeArea())
         .onAppear {
+            PlaybackAudio.activate()
             let newPlayer = AVPlayer(url: url)
             player = newPlayer
             newPlayer.play()

@@ -3,7 +3,13 @@ import SwiftData
 
 struct TimelineView: View {
     @Environment(AppModel.self) private var model
-    @Query(sort: \Moment.createdAt) private var moments: [Moment]
+    @Query(sort: \Moment.createdAt) private var allMoments: [Moment]
+
+    /// The timeline is headed with today's date and hour-only labels, so it
+    /// only makes sense scoped to today's moments.
+    private var moments: [Moment] {
+        allMoments.filter { Calendar.current.isDateInToday($0.createdAt) }
+    }
 
     private var dateLabel: String {
         Date.now.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())

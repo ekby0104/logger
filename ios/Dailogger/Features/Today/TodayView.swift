@@ -4,11 +4,18 @@ import SwiftData
 struct TodayView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.modelContext) private var context
-    @Query(sort: \Moment.createdAt) private var moments: [Moment]
+    @Query(sort: \Moment.createdAt) private var allMoments: [Moment]
     @Query private var logs: [DailyLog]
 
+    /// The Today tab only ever shows today's recordings; the full set is
+    /// still needed for the streak, so filtering happens here rather than
+    /// in the query (a query predicate would also go stale at midnight).
+    private var moments: [Moment] {
+        allMoments.filter { Calendar.current.isDateInToday($0.createdAt) }
+    }
+
     private var streak: Int {
-        Stats.streak(recordDates: logs.map(\.date) + moments.map(\.createdAt))
+        Stats.streak(recordDates: logs.map(\.date) + allMoments.map(\.createdAt))
     }
 
     private var dateLabel: String {

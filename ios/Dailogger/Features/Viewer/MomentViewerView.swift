@@ -10,7 +10,7 @@ import UIKit
 /// - moments without a clip advance after a fixed interval
 struct MomentViewerView: View {
     @Environment(AppModel.self) private var model
-    @Query(sort: \Moment.createdAt) private var moments: [Moment]
+    @Query(sort: \Moment.createdAt) private var allMoments: [Moment]
     @State private var player: AVPlayer?
     @State private var isPaused = false
     @State private var pressStartDate: Date?
@@ -18,6 +18,15 @@ struct MomentViewerView: View {
 
     /// A touch shorter than this is a navigation tap; longer is a hold-to-pause.
     private let holdThreshold = 0.25
+
+    /// The story feed is one day: only moments sharing a day with the one
+    /// that opened the viewer, so playback never crosses into other days.
+    private var moments: [Moment] {
+        guard let anchor = model.viewerMoment else { return allMoments }
+        return allMoments.filter {
+            Calendar.current.isDate($0.createdAt, inSameDayAs: anchor.createdAt)
+        }
+    }
 
     private var current: Moment? {
         model.viewerMoment ?? moments.first

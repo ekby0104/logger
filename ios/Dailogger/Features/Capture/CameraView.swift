@@ -209,25 +209,43 @@ struct CameraView: View {
         }
     }
 
+    /// The full bar width represents the 5-second cap, so recorded segments
+    /// (white), the in-flight segment (red), and what's left always add up.
     private var segmentBar: some View {
-        HStack(spacing: 4) {
-            ForEach(Array(model.segments.enumerated()), id: \.offset) { _, seconds in
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(.white)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 4)
-                            .strokeBorder(HL.ink, lineWidth: 2)
-                    }
-                    .frame(width: CGFloat(min(seconds * 7, 60)), height: 8)
-            }
-            RoundedRectangle(cornerRadius: 4)
-                .fill(.white.opacity(0.25))
-                .overlay {
+        let cap = CGFloat(AppModel.maxClipSeconds)
+        return GeometryReader { geometry in
+            let width = geometry.size.width
+            HStack(spacing: 4) {
+                ForEach(Array(model.segments.enumerated()), id: \.offset) { _, seconds in
                     RoundedRectangle(cornerRadius: 4)
-                        .strokeBorder(.white.opacity(0.6), lineWidth: 2)
+                        .fill(.white)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 4)
+                                .strokeBorder(HL.ink, lineWidth: 2)
+                        }
+                        .frame(width: max(width * CGFloat(seconds) / cap - 4, 8))
                 }
-                .frame(height: 8)
+                if model.isRecording {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(HL.red)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 4)
+                                .strokeBorder(.white, lineWidth: 2)
+                        }
+                        .frame(width: max(width * CGFloat(model.elapsed) / cap - 4, 8))
+                        .animation(.linear(duration: 0.3), value: model.elapsed)
+                }
+                if model.recordedSeconds < AppModel.maxClipSeconds {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(.white.opacity(0.25))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 4)
+                                .strokeBorder(.white.opacity(0.6), lineWidth: 2)
+                        }
+                }
+            }
         }
+        .frame(height: 8)
     }
 
     // MARK: - Bottom

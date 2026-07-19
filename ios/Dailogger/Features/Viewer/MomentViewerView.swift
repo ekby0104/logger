@@ -12,6 +12,9 @@ struct MomentViewerView: View {
     @Environment(AppModel.self) private var model
     @Query(sort: \Moment.createdAt) private var allMoments: [Moment]
     @State private var player: AVPlayer?
+    /// Portrait clips fill the screen; landscape imports letterbox instead
+    /// of being blown up and cropped.
+    @State private var videoGravity: AVLayerVideoGravity = .resizeAspectFill
     @State private var isPaused = false
     @State private var pressStartDate: Date?
     @State private var pauseTask: Task<Void, Never>?
@@ -44,7 +47,7 @@ struct MomentViewerView: View {
             HL.camBackground.ignoresSafeArea()
 
             if let player {
-                PlayerLayerView(player: player)
+                PlayerLayerView(player: player, gravity: videoGravity)
                     .ignoresSafeArea()
             }
 
@@ -215,6 +218,23 @@ struct MomentViewerView: View {
             player = newPlayer
             newPlayer.play()
         }
+        applyGravity(for: url)
+    }
+
+    /// Fill for portrait clips, fit (letterbox) for landscape ones, based on
+    /// the clip's oriented dimensions.
+    private func applyGravity(for url: URL) {
+        Task { @MainActor in
+            let asset = AVURLAsset(url: url)
+            guard let track = try? await asset.loadTracks(withMediaType: .video).first,
+                  let natural = try? await track.load(.naturalSize),
+                  let transform = try? await track.load(.preferredTransform),
+                  url == current?.videoURL else { return }
+            let rect = CGRect(origin: .zero, size: natural).applying(transform)
+            videoGravity = abs(rect.height) >= abs(rect.width)
+                ? .resizeAspectFill
+                : .resizeAspect
+        }
     }
 
     private func tearDownPlayer() {
@@ -288,6 +308,7 @@ struct MomentViewerView: View {
 
 private struct PlayerLayerView: UIViewRepresentable {
     let player: AVPlayer
+    let gravity: AVLayerVideoGravity
 
     final class PlayerUIView: UIView {
         override class var layerClass: AnyClass {
@@ -302,13 +323,16 @@ private struct PlayerLayerView: UIViewRepresentable {
     func makeUIView(context: Context) -> PlayerUIView {
         let view = PlayerUIView()
         view.playerLayer.player = player
-        view.playerLayer.videoGravity = .resizeAspectFill
+        view.playerLayer.videoGravity = gravity
         return view
     }
 
     func updateUIView(_ uiView: PlayerUIView, context: Context) {
         if uiView.playerLayer.player !== player {
             uiView.playerLayer.player = player
+        }
+        if uiView.playerLayer.videoGravity != gravity {
+            uiView.playerLayer.videoGravity = gravity
         }
     }
 }

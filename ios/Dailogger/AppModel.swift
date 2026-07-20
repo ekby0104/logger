@@ -380,11 +380,11 @@ final class AppModel {
         refreshWidgetAndReminder(context: context)
     }
 
-    /// Opens today's blog editor with the saved draft (or blank fields).
-    /// Generation is opt-in via the "Write with AI" button in the editor.
-    func openBlogEditor(context: ModelContext) {
-        blogDate = .now
-        if let saved = log(for: .now, context: context),
+    /// Opens the blog editor for a day (today by default) with the saved
+    /// draft or blank fields. Generation is opt-in via "Write with AI".
+    func openBlogEditor(context: ModelContext, for date: Date = .now) {
+        blogDate = date
+        if let saved = log(for: date, context: context),
            let title = saved.blogTitle,
            let body = saved.blogText {
             blogTitle = title
@@ -474,36 +474,17 @@ final class AppModel {
         return (try? context.fetch(descriptor))?.first
     }
 
-    /// Writes the daily blog for finished days that never got one (usually
-    /// yesterday), so after midnight the diary is ready on next app open.
-    /// Uses on-device AI where available, the template otherwise; days the
-    /// user already wrote are untouched, and sample data (no video file)
-    /// never triggers a blog.
-    func autoGenerateMissingBlogs(context: ModelContext) {
-        Task { @MainActor in
-            let calendar = Calendar.current
-            let todayStart = calendar.startOfDay(for: .now)
-            let all = (try? context.fetch(FetchDescriptor<Moment>())) ?? []
-            let pastByDay = Dictionary(
-                grouping: all.filter { $0.createdAt < todayStart && $0.videoFileName != nil }
-            ) { calendar.startOfDay(for: $0.createdAt) }
-
-            for (day, dayMoments) in pastByDay.sorted(by: { $0.key < $1.key }) {
-                let existing = log(for: day, context: context)
-                if existing?.blogText != nil { continue }
-
-                let sorted = dayMoments.sorted { $0.createdAt < $1.createdAt }
-                let result = await BlogWriter.write(for: sorted, date: day)
-                let log = existing ?? {
-                    let newLog = DailyLog(date: day, clipCount: sorted.count)
-                    context.insert(newLog)
-                    return newLog
-                }()
-                log.clipCount = sorted.count
-                log.blogTitle = result.title
-                log.blogText = result.body
-                log.blogIsAI = result.isAIGenerated
-                log.isBlogReady = true
+    /// Removes duplicate DailyLogs for the same day (a since-removed
+    /// auto-blog feature could race and insert two). Keeps the one with
+    /// blog text, or the first otherwise.
+    func cleanupDuplicateLogs(context: ModelContext) {
+        let calendar = Calendar.current
+        let logs = (try? context.fetch(FetchDescriptor<DailyLog>())) ?? []
+        let byDay = Dictionary(grouping: logs) { calendar.startOfDay(for: $0.date) }
+        for (_, dayLogs) in byDay where dayLogs.count > 1 {
+            let keep = dayLogs.first { $0.blogText != nil } ?? dayLogs[0]
+            for log in dayLogs where log !== keep {
+                context.delete(log)
             }
         }
     }

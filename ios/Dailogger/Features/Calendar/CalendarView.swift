@@ -34,9 +34,21 @@ struct CalendarView: View {
     private var blogDays: Set<Int> {
         Set(
             logs.filter {
+                $0.blogText != nil &&
                 calendar.isDate($0.date, equalTo: displayedMonth, toGranularity: .month)
             }
             .map { calendar.component(.day, from: $0.date) }
+        )
+    }
+
+    /// Days in the displayed month that have at least one moment — these are
+    /// selectable even before a blog exists.
+    private var momentDays: Set<Int> {
+        Set(
+            moments.filter {
+                calendar.isDate($0.createdAt, equalTo: displayedMonth, toGranularity: .month)
+            }
+            .map { calendar.component(.day, from: $0.createdAt) }
         )
     }
 
@@ -108,7 +120,7 @@ struct CalendarView: View {
                 Text(monthTitle)
                     .font(.hl(27))
                     .foregroundStyle(HL.ink)
-                Text("You logged \(blogDays.count) days this month")
+                Text("You logged \(blogDays.union(momentDays).count) days this month")
                     .font(.hlRegular(13))
                     .foregroundStyle(HL.gray)
             }
@@ -148,30 +160,32 @@ struct CalendarView: View {
         if isCurrentMonth {
             selectedDay = todayDay
         } else {
-            selectedDay = blogDays.min() ?? 1
+            selectedDay = blogDays.union(momentDays).min() ?? 1
         }
     }
 
     private func dayCell(_ day: Int) -> some View {
         let hasBlog = blogDays.contains(day)
+        let hasRecords = hasBlog || momentDays.contains(day)
         let isToday = isCurrentMonth && day == todayDay
         let isSelected = day == selectedDay
 
         return Button {
-            if hasBlog { selectedDay = day }
+            if hasRecords { selectedDay = day }
         } label: {
             ZStack(alignment: .topTrailing) {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(isSelected ? HL.blue : (hasBlog ? Color.white : HL.calEmpty))
+                    .fill(isSelected ? HL.blue : (hasRecords ? Color.white : HL.calEmpty))
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .strokeBorder(isToday && !isSelected ? HL.blue : HL.ink, lineWidth: 2)
                 Text("\(day)")
                     .font(.hl(12))
-                    .foregroundStyle(isSelected ? .white : (hasBlog ? HL.ink : HL.muted))
+                    .foregroundStyle(isSelected ? .white : (hasRecords ? HL.ink : HL.muted))
                     .padding(5)
+                // Blog-ready marker (blue, matching the "Read the blog" link).
                 if hasBlog {
                     Circle()
-                        .fill(isSelected ? Color.white : HL.purple)
+                        .fill(isSelected ? Color.white : HL.blue)
                         .overlay {
                             Circle().strokeBorder(HL.ink, lineWidth: 1.5)
                         }
@@ -188,10 +202,10 @@ struct CalendarView: View {
     private var detailCard: some View {
         let log = selectedLog
         let meta: String
-        if let log {
-            meta = log.blogText != nil
-                ? String(localized: "\(log.clipCount) clips · blog ready")
-                : String(localized: "\(log.clipCount) clips · no blog yet")
+        if log?.blogText != nil {
+            meta = String(localized: "\(selectedDayMoments.count) clips · blog ready")
+        } else if !selectedDayMoments.isEmpty {
+            meta = String(localized: "\(selectedDayMoments.count) clips · no blog yet")
         } else {
             meta = String(localized: "No records")
         }
@@ -225,6 +239,22 @@ struct CalendarView: View {
                         Image(systemName: "book")
                             .font(.system(size: 12, weight: .bold))
                         Text("Read the blog")
+                            .font(.hl(13))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .bold))
+                    }
+                    .foregroundStyle(HL.blue)
+                }
+                .buttonStyle(.plain)
+            } else if !selectedDayMoments.isEmpty {
+                // No blog yet for this day — jump into the editor for it.
+                Button {
+                    model.openBlogEditor(context: context, for: selectedDate)
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 12, weight: .bold))
+                        Text("Write this day's blog")
                             .font(.hl(13))
                         Image(systemName: "chevron.right")
                             .font(.system(size: 11, weight: .bold))

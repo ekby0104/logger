@@ -4,7 +4,6 @@ import SwiftData
 struct RootTabView: View {
     @State private var model = AppModel()
     @Environment(\.modelContext) private var context
-    @Environment(\.scenePhase) private var scenePhase
     // Font helpers read this key at render time; changing it forces the
     // whole tree to rebuild via .id so every screen picks up the new face.
     @AppStorage(HLFontChoice.storageKey) private var appFont = ""
@@ -44,15 +43,9 @@ struct RootTabView: View {
         .environment(model)
         .task {
             SeedData.insertIfNeeded(context: context)
+            model.cleanupDuplicateLogs(context: context)
             model.refreshWidgetAndReminder(context: context)
             model.remeasureDurations(context: context)
-            model.autoGenerateMissingBlogs(context: context)
-        }
-        // Also catch the app being resumed (not relaunched) on a new day.
-        .onChange(of: scenePhase) {
-            if scenePhase == .active {
-                model.autoGenerateMissingBlogs(context: context)
-            }
         }
     }
 }

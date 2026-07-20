@@ -501,6 +501,16 @@
         }
       }
     },
+    "Write this day's blog": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이날의 블로그 쓰기"
+          }
+        }
+      }
+    },
     "Sample data removed": {
       "localizations": {
         "ko": {

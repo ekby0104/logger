@@ -474,6 +474,40 @@ final class AppModel {
         return (try? context.fetch(descriptor))?.first
     }
 
+    /// Writes the daily blog for finished days that never got one (usually
+    /// yesterday), so after midnight the diary is ready on next app open.
+    /// Uses on-device AI where available, the template otherwise; days the
+    /// user already wrote are untouched, and sample data (no video file)
+    /// never triggers a blog.
+    func autoGenerateMissingBlogs(context: ModelContext) {
+        Task { @MainActor in
+            let calendar = Calendar.current
+            let todayStart = calendar.startOfDay(for: .now)
+            let all = (try? context.fetch(FetchDescriptor<Moment>())) ?? []
+            let pastByDay = Dictionary(
+                grouping: all.filter { $0.createdAt < todayStart && $0.videoFileName != nil }
+            ) { calendar.startOfDay(for: $0.createdAt) }
+
+            for (day, dayMoments) in pastByDay.sorted(by: { $0.key < $1.key }) {
+                let existing = log(for: day, context: context)
+                if existing?.blogText != nil { continue }
+
+                let sorted = dayMoments.sorted { $0.createdAt < $1.createdAt }
+                let result = await BlogWriter.write(for: sorted, date: day)
+                let log = existing ?? {
+                    let newLog = DailyLog(date: day, clipCount: sorted.count)
+                    context.insert(newLog)
+                    return newLog
+                }()
+                log.clipCount = sorted.count
+                log.blogTitle = result.title
+                log.blogText = result.body
+                log.blogIsAI = result.isAIGenerated
+                log.isBlogReady = true
+            }
+        }
+    }
+
     /// One-time fix-up for moments saved before durations were measured
     /// from the file (they were timer-estimated with a 5-second floor).
     /// Opening every video is expensive, so after one successful pass a

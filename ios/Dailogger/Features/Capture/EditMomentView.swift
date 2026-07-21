@@ -158,6 +158,11 @@ struct EditMomentView: View {
         }
         .background(HL.paper.ignoresSafeArea())
         .onAppear { caption = model.draftCaption }
+        .onChange(of: caption) {
+            if caption.count > TextInput.captionLimit {
+                caption = String(caption.prefix(TextInput.captionLimit))
+            }
+        }
     }
 
     private var header: some View {

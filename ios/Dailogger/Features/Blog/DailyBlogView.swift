@@ -111,6 +111,16 @@ struct DailyBlogView: View {
         }
         .onChange(of: model.blogTitle) { title = model.blogTitle }
         .onChange(of: model.blogBody) { bodyText = model.blogBody }
+        .onChange(of: title) {
+            if title.count > TextInput.blogTitleLimit {
+                title = String(title.prefix(TextInput.blogTitleLimit))
+            }
+        }
+        .onChange(of: bodyText) {
+            if bodyText.count > TextInput.blogBodyLimit {
+                bodyText = String(bodyText.prefix(TextInput.blogBodyLimit))
+            }
+        }
     }
 
     private var header: some View {

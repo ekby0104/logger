@@ -316,7 +316,7 @@ final class AppModel {
     func saveMoment(context: ModelContext) {
         // Editing an existing moment: update it in place.
         if let editing = editingMoment {
-            editing.caption = draftCaption
+            editing.caption = TextInput.sanitize(draftCaption, limit: TextInput.captionLimit)
             editing.mood = draftMood
             resetCapture()
             viewerMoment = nil
@@ -328,6 +328,7 @@ final class AppModel {
         // New moment from the camera flow. Prefer the measured length of the
         // merged file; the whole-second timer count is only a fallback.
         let seconds = draftDuration ?? TimeInterval(max(recordedSeconds, 1))
+        let caption = TextInput.sanitize(draftCaption, limit: TextInput.captionLimit)
         let id = UUID()
 
         var videoName: String?
@@ -343,8 +344,8 @@ final class AppModel {
         let moment = Moment(
             id: id,
             createdAt: .now,
-            title: String(draftCaption.prefix(14)),
-            caption: draftCaption,
+            title: String(caption.prefix(14)),
+            caption: caption,
             mood: draftMood,
             duration: seconds,
             placeName: currentPlaceName ?? String(localized: "Somewhere today"),
@@ -418,6 +419,10 @@ final class AppModel {
     }
 
     func saveBlog(context: ModelContext) {
+        blogTitle = TextInput.sanitize(blogTitle, limit: TextInput.blogTitleLimit)
+        blogBody = TextInput.sanitize(
+            blogBody, limit: TextInput.blogBodyLimit, allowNewlines: true
+        )
         let dayMoments = moments(on: blogDate, context: context)
         let log = log(for: blogDate, context: context) ?? {
             let newLog = DailyLog(

@@ -154,8 +154,21 @@ enum ReelComposer {
         let cardMinX = 56 * scale
         let rightMargin = 14 * scale
         let captionStripH = 72 * scale
-        let topMargin = H * 0.08
         let bottomMargin = H * 0.09
+
+        // The blog line sits on the paper just below the platform top-UI
+        // zone (~12%), above the card — the bottom margin is covered by
+        // platform UI (likes/caption bar) so it can't live there.
+        let trimmedBlog = blogText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let blogImage: UIImage? = trimmedBlog.isEmpty ? nil : ReelOverlayRenderer.plainText(
+            truncated(trimmedBlog, limit: 90),
+            fontSize: 13.5 * scale,
+            color: ink,
+            maxWidth: W * 0.8,
+            maxHeight: 44 * scale
+        )
+        let blogTop = H * 0.125
+        let topMargin = blogImage.map { blogTop + $0.size.height + 12 * scale } ?? H * 0.08
 
         // Media area keeps the source aspect so the video isn't distorted.
         let aspect = W / H
@@ -180,6 +193,16 @@ enum ReelComposer {
         let parentLayer = CALayer()
         parentLayer.frame = CGRect(origin: .zero, size: renderSize)
         parentLayer.backgroundColor = paper.cgColor
+
+        if let blogImage {
+            parentLayer.addSublayer(imageLayer(
+                blogImage,
+                origin: CGPoint(
+                    x: (W - blogImage.size.width) / 2,
+                    y: flipY(blogTop, blogImage.size.height)
+                )
+            ))
+        }
 
         // Dashed rail + purple dot. The rail's top aligns with the media area
         // (so it never pokes into platform UI like the Instagram story
@@ -285,28 +308,6 @@ enum ReelComposer {
                 setVisibility(captionLayer, start: segment.start, duration: segment.duration, totalSeconds: totalSeconds)
                 parentLayer.addSublayer(captionLayer)
             }
-        }
-
-        // Blog line lives on the paper below the card — like a note under a
-        // polaroid — so it never covers the video.
-        let trimmedBlog = blogText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmedBlog.isEmpty {
-            let display = truncated(trimmedBlog, limit: 90)
-            let blogImage = ReelOverlayRenderer.plainText(
-                display,
-                fontSize: 13.5 * scale,
-                color: ink,
-                maxWidth: W * 0.8,
-                maxHeight: max(bottomMargin - 24 * scale, 16 * scale)
-            )
-            let blogTop = cardTop + cardH + shadowOffset + 12 * scale
-            parentLayer.addSublayer(imageLayer(
-                blogImage,
-                origin: CGPoint(
-                    x: (W - blogImage.size.width) / 2,
-                    y: flipY(blogTop, blogImage.size.height)
-                )
-            ))
         }
 
         return (parentLayer, videoLayer)

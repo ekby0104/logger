@@ -46,7 +46,7 @@ git sync   # = git checkout -- . && git pull (로컬 Xcode 변경 버리고 최�
 | Today 탭 | 오늘 요약 히어로 카드 + 오늘 모먼트 목록 |
 | Timeline 탭 | 전체 기록을 날짜별 그룹(점선 레일)으로 표시, 최신 날짜 우선 |
 | Calendar 탭 | 월간 그리드, 날짜 카드 탭 → 그 날 스토리 재생, "Read the blog" → 블로그 |
-| Me 탭 | 스트릭·블로그·모먼트 통계, 블로그 아카이브(탭 → 스토리, 길게 → 블로그), 설정(폰트·리마인더·샘플 제거) |
+| Me 탭 | 스트릭·블로그·모먼트 통계, 블로그 아카이브(탭 → 스토리, 길게 → 블로그), 설정(폰트·리마인더) |
 | 데일리 블로그 | 직접 작성 + "Write with AI" 버튼 (iOS 26+ Apple Intelligence 온디바이스, 폴백 템플릿), 수정·재사용 |
 | 릴 영상 | 타임라인 카드 스타일 / 풀사이즈 스타일 2종, 소셜 안전 영역 고려한 오버레이, 미리보기·공유 |
 | 위젯 | 스트릭·오늘 클립 수 (systemSmall / systemMedium), 앱 그룹으로 동기화 |
@@ -54,7 +54,6 @@ git sync   # = git checkout -- . && git pull (로컬 Xcode 변경 버리고 최�
 | 폰트 | 권정애체(런타임 등록, 1.15배 보정) / American Typewriter / 시스템 — Me 탭에서 선택, 위젯도 연동 |
 | 런치 스크린 | 종이색 배경 + 카메라 배지 아이콘 (Info.plist `UILaunchScreen`) |
 | 현지화 | 한국어·영어 (String Catalogs) |
-| 샘플 데이터 | 첫 실행 시 데모 모먼트 시드, Me 탭 ⚙️에서 제거 가능 |
 
 로그인·계정·서버는 **없습니다** — 모든 데이터는 SwiftData(기기 내) + 파일로만 저장됩니다.
 
@@ -80,7 +79,7 @@ ios/
 │   ├── AppModel.swift         # @Observable 앱 상태 (탭·오버레이·녹화·블로그·토스트)
 │   ├── Info.plist             # UILaunchScreen만 (나머지는 빌드 설정에서 생성)
 │   ├── DesignSystem/          # HL 색 토큰, 폰트 선택, hardCard, 공용 컴포넌트
-│   ├── Models/                # Moment, DailyLog, SeedData, Stats
+│   ├── Models/                # Moment, DailyLog, Stats
 │   ├── Media/                 # MediaStore, VideoComposer, ThumbnailStore, ReelComposer
 │   ├── Features/              # Today, Timeline, Calendar, Profile, Capture, Viewer, Blog
 │   ├── Fonts/                 # Together-KwonJungae.otf

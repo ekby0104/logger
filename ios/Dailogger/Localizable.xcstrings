@@ -241,32 +241,12 @@
         }
       }
     },
-    "Remove sample data": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "샘플 데이터 삭제"
-          }
-        }
-      }
-    },
     "Cancel": {
       "localizations": {
         "ko": {
           "stringUnit": {
             "state": "translated",
             "value": "취소"
-          }
-        }
-      }
-    },
-    "Removes the demo moments (no video) and past demo days. Your real recordings and blogs stay.": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "데모 모먼트(영상 없음)와 지난 데모 날짜를 삭제합니다. 실제 녹화와 블로그는 유지돼요."
           }
         }
       }
@@ -527,16 +507,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "이날의 블로그 쓰기"
-          }
-        }
-      }
-    },
-    "Sample data removed": {
-      "localizations": {
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "샘플 데이터를 삭제했어요"
           }
         }
       }

@@ -101,12 +101,7 @@ struct ProfileView: View {
                         enableReminder()
                     }
                 }
-                Button("Remove sample data", role: .destructive) {
-                    removeSampleData()
-                }
                 Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("Removes the demo moments (no video) and past demo days. Your real recordings and blogs stay.")
             }
             .confirmationDialog("Change font", isPresented: $showFontPicker) {
                 Button("Handwriting (KwonJungae)") { setFont(.kwonjungae) }
@@ -232,18 +227,4 @@ struct ProfileView: View {
         }
     }
 
-    /// Deletes seeded demo content: moments without a recorded clip and
-    /// past days that never got a blog. Real recordings are untouched.
-    private func removeSampleData() {
-        let calendar = Calendar.current
-        let todayStart = calendar.startOfDay(for: .now)
-        for moment in moments where moment.videoFileName == nil {
-            context.delete(moment)
-        }
-        for log in logs where log.blogText == nil && log.date < todayStart {
-            context.delete(log)
-        }
-        UserDefaults.standard.set(true, forKey: SeedData.samplesRemovedKey)
-        model.flashToast(String(localized: "Sample data removed"))
-    }
 }

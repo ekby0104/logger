@@ -474,16 +474,25 @@ final class AppModel {
         return (try? context.fetch(descriptor))?.first
     }
 
-    /// Removes duplicate DailyLogs for the same day (a since-removed
-    /// auto-blog feature could race and insert two). Keeps the one with
-    /// blog text, or the first otherwise.
-    func cleanupDuplicateLogs(context: ModelContext) {
+    /// Removes leftovers from removed features on devices that had them:
+    /// seeded demo content (moments without a video file, logs without blog
+    /// text — real saves always have both) and duplicate DailyLogs from the
+    /// short-lived auto-blog feature.
+    func cleanupLegacyData(context: ModelContext) {
+        let allMoments = (try? context.fetch(FetchDescriptor<Moment>())) ?? []
+        for moment in allMoments where moment.videoFileName == nil {
+            context.delete(moment)
+        }
+
         let calendar = Calendar.current
         let logs = (try? context.fetch(FetchDescriptor<DailyLog>())) ?? []
-        let byDay = Dictionary(grouping: logs) { calendar.startOfDay(for: $0.date) }
+        for log in logs where log.blogText == nil {
+            context.delete(log)
+        }
+        let remaining = logs.filter { $0.blogText != nil }
+        let byDay = Dictionary(grouping: remaining) { calendar.startOfDay(for: $0.date) }
         for (_, dayLogs) in byDay where dayLogs.count > 1 {
-            let keep = dayLogs.first { $0.blogText != nil } ?? dayLogs[0]
-            for log in dayLogs where log !== keep {
+            for log in dayLogs.dropFirst() {
                 context.delete(log)
             }
         }

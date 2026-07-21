@@ -46,12 +46,14 @@
 3. Organizer → Distribute App → App Store Connect → Upload
 4. App Store Connect에서 버전에 새 빌드 연결 → 제출
 
-## 참고: 심사 메모 (제출 시 사용한 내용)
+## 참고: 심사 메모
+
+1.0 제출본에는 샘플 데이터 안내가 포함되어 있었지만, **빌드 5부터 샘플 데이터가 제거**되어
+다음 제출부터는 아래 문구를 사용하세요:
 
 ```
 Notes for review:
 - Dailogger is a fully local video diary. There are no accounts and no servers; all data stays on device.
-- On first launch the app shows sample (demo) moments so screens are not empty. They can be removed via Me tab > gear > "Remove sample data".
 - Camera/microphone are used to record short diary clips. Location (optional) only names the place of a moment on-device.
-- The "Write with AI" button uses Apple's on-device Foundation Models on supported devices; on other devices it composes the diary from the user's own captions. No content is uploaded.
+- The "Write with AI" button uses Apple's on-device Foundation Models on supported devices; on other devices it composes the caption from the user's own notes. No content is uploaded.
 ```

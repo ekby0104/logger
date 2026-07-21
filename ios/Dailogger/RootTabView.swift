@@ -42,8 +42,7 @@ struct RootTabView: View {
         }
         .environment(model)
         .task {
-            SeedData.insertIfNeeded(context: context)
-            model.cleanupDuplicateLogs(context: context)
+            model.cleanupLegacyData(context: context)
             model.refreshWidgetAndReminder(context: context)
             model.remeasureDurations(context: context)
         }

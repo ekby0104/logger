@@ -469,6 +469,45 @@ enum ReelOverlayRenderer {
         max(fontSize * 0.14, 2)
     }
 
+    /// Text in the app face with emoji runs pinned to Apple Color Emoji.
+    /// Some bundled faces map emoji codepoints to blank glyphs, which
+    /// blocks the system font fallback — emoji silently vanished from reels.
+    private static func attributed(
+        _ text: String,
+        fontSize: CGFloat,
+        color: UIColor,
+        paragraph: NSParagraphStyle? = nil
+    ) -> NSAttributedString {
+        var attributes: [NSAttributedString.Key: Any] = [
+            .font: font(fontSize),
+            .foregroundColor: color
+        ]
+        if let paragraph {
+            attributes[.paragraphStyle] = paragraph
+        }
+        let result = NSMutableAttributedString(string: text, attributes: attributes)
+
+        let scaled = fontSize * HLFontChoice.current.sizeScale
+        guard let emojiFont = UIFont(name: "AppleColorEmoji", size: scaled) else {
+            return result
+        }
+        var location = 0
+        for character in text {
+            let length = String(character).utf16.count
+            let isEmoji = character.unicodeScalars.contains {
+                $0.properties.isEmojiPresentation || $0.value == 0xFE0F
+            }
+            if isEmoji {
+                result.addAttribute(
+                    .font, value: emojiFont,
+                    range: NSRange(location: location, length: length)
+                )
+            }
+            location += length
+        }
+        return result
+    }
+
     /// White rounded card with ink border and hard offset shadow.
     /// The image is (size + shadowOffset) large; the card sits at origin.
     static func cardWithShadow(
@@ -539,15 +578,10 @@ enum ReelOverlayRenderer {
         paragraph.alignment = .left
         paragraph.lineSpacing = fontSize * 0.2
 
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font(fontSize),
-            .foregroundColor: color,
-            .paragraphStyle: paragraph
-        ]
-        let bounding = (text as NSString).boundingRect(
+        let attributedText = attributed(text, fontSize: fontSize, color: color, paragraph: paragraph)
+        let bounding = attributedText.boundingRect(
             with: CGSize(width: maxWidth, height: .greatestFiniteMagnitude),
             options: [.usesLineFragmentOrigin],
-            attributes: attributes,
             context: nil
         )
         var size = CGSize(width: ceil(bounding.width), height: ceil(bounding.height))
@@ -557,10 +591,9 @@ enum ReelOverlayRenderer {
 
         let renderer = UIGraphicsImageRenderer(size: size)
         return renderer.image { _ in
-            (text as NSString).draw(
+            attributedText.draw(
                 with: CGRect(origin: .zero, size: size),
                 options: [.usesLineFragmentOrigin],
-                attributes: attributes,
                 context: nil
             )
         }
@@ -570,7 +603,7 @@ enum ReelOverlayRenderer {
     /// finally truncates so it always fits within maxWidth.
     static func pill(_ text: String, fontSize: CGFloat, maxWidth: CGFloat, ink: UIColor) -> UIImage {
         func textWidth(_ string: String, _ size: CGFloat) -> CGFloat {
-            (string as NSString).size(withAttributes: [.font: font(size)]).width
+            attributed(string, fontSize: size, color: ink).size().width
         }
 
         var size = fontSize
@@ -589,11 +622,8 @@ enum ReelOverlayRenderer {
             display += "…"
         }
 
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font(size),
-            .foregroundColor: ink
-        ]
-        let textSize = (display as NSString).size(withAttributes: attributes)
+        let attributedDisplay = attributed(display, fontSize: size, color: ink)
+        let textSize = attributedDisplay.size()
         let padV = size * 0.5
         let border = lineWidth(fontSize)
         let imageSize = CGSize(
@@ -611,10 +641,7 @@ enum ReelOverlayRenderer {
             ink.setStroke()
             path.lineWidth = border
             path.stroke()
-            (display as NSString).draw(
-                at: CGPoint(x: padH, y: padV),
-                withAttributes: attributes
-            )
+            attributedDisplay.draw(at: CGPoint(x: padH, y: padV))
         }
     }
 
@@ -625,18 +652,13 @@ enum ReelOverlayRenderer {
         paragraph.alignment = .left
         paragraph.lineSpacing = fontSize * 0.2
 
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font(fontSize),
-            .foregroundColor: ink,
-            .paragraphStyle: paragraph
-        ]
+        let attributedText = attributed(text, fontSize: fontSize, color: ink, paragraph: paragraph)
         let padding = fontSize * 0.7
         let border = lineWidth(fontSize)
         let textMaxWidth = maxWidth - padding * 2
-        let bounding = (text as NSString).boundingRect(
+        let bounding = attributedText.boundingRect(
             with: CGSize(width: textMaxWidth, height: .greatestFiniteMagnitude),
             options: [.usesLineFragmentOrigin],
-            attributes: attributes,
             context: nil
         )
         let textSize = CGSize(width: ceil(bounding.width), height: ceil(bounding.height))
@@ -655,10 +677,9 @@ enum ReelOverlayRenderer {
             ink.setStroke()
             path.lineWidth = border
             path.stroke()
-            (text as NSString).draw(
+            attributedText.draw(
                 with: CGRect(origin: CGPoint(x: padding, y: padding), size: textSize),
                 options: [.usesLineFragmentOrigin],
-                attributes: attributes,
                 context: nil
             )
         }
@@ -671,18 +692,13 @@ enum ReelOverlayRenderer {
         paragraph.alignment = .center
         paragraph.lineSpacing = fontSize * 0.3
 
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font(fontSize),
-            .foregroundColor: UIColor.white,
-            .paragraphStyle: paragraph
-        ]
+        let attributedText = attributed(text, fontSize: fontSize, color: .white, paragraph: paragraph)
         let padding = fontSize * 0.9
         let border = lineWidth(fontSize)
         let textMaxWidth = maxWidth - padding * 2
-        let bounding = (text as NSString).boundingRect(
+        let bounding = attributedText.boundingRect(
             with: CGSize(width: textMaxWidth, height: .greatestFiniteMagnitude),
             options: [.usesLineFragmentOrigin],
-            attributes: attributes,
             context: nil
         )
         let textSize = CGSize(width: ceil(bounding.width), height: ceil(bounding.height))
@@ -701,10 +717,9 @@ enum ReelOverlayRenderer {
             UIColor.white.setStroke()
             path.lineWidth = border
             path.stroke()
-            (text as NSString).draw(
+            attributedText.draw(
                 with: CGRect(origin: CGPoint(x: padding, y: padding), size: textSize),
                 options: [.usesLineFragmentOrigin],
-                attributes: attributes,
                 context: nil
             )
         }

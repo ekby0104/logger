@@ -29,25 +29,21 @@ enum BlogWriter {
 
     // MARK: - Template fallback
 
+    /// Short SNS-caption style, matching the AI output: one punchy line.
     private static func template(moments: [Moment], date: Date) -> BlogResult {
         let dayName = date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
-
         let sorted = moments.sorted { $0.createdAt < $1.createdAt }
 
-        var lines: [String] = []
-        lines.append(String(localized: "\(dayName). I captured \(sorted.count) little moments today."))
-        for moment in sorted {
-            if moment.caption.isEmpty {
-                lines.append(String(localized: "At \(moment.timeLabel) · \(moment.placeName)"))
-            } else {
-                lines.append(String(localized: "At \(moment.timeLabel) · \(moment.placeName) — \(moment.caption)"))
-            }
+        let body: String
+        if let caption = sorted.first(where: { !$0.caption.isEmpty })?.caption {
+            body = String(localized: "\(caption) 🎬 day logged ✨")
+        } else {
+            body = String(localized: "Today in \(sorted.count) clips, nailed it ✨")
         }
-        lines.append(String(localized: "That was my day — \(sorted.count) clips of ordinary life worth keeping."))
 
         return BlogResult(
             title: dayName,
-            body: lines.joined(separator: "\n\n"),
+            body: body,
             isAIGenerated: false
         )
     }
@@ -60,12 +56,13 @@ enum BlogWriter {
 @available(iOS 26.0, *)
 @Generable
 private struct GeneratedBlog {
-    @Guide(description: "A warm, personal diary title. Max 40 characters. No quotation marks.")
+    @Guide(description: "A catchy title. Max 5 words. No quotation marks.")
     var title: String
 
     @Guide(description: """
-        The diary entry: 4-6 sentences, first person, past tense, warm and reflective, \
-        weaving the moments into one flowing narrative. No lists or headings.
+        One punchy social-media caption for the day. STRICTLY 10 words or \
+        fewer. Casual, trendy Gen-Z voice. At most two emojis. \
+        No hashtags, no lists, no line breaks.
         """)
     var body: String
 }
@@ -87,13 +84,14 @@ extension BlogWriter {
 
         let wantsKorean = Locale.preferredLanguages.first?.hasPrefix("ko") ?? false
         let languageRule = wantsKorean
-            ? "Write the diary in natural, warm Korean (일기체)."
-            : "Write the diary in English."
+            ? "Write in Korean: casual, trendy MZ/SNS tone (짧은 반말, 인스타 캡션 느낌)."
+            : "Write in English: casual, trendy social-caption tone."
         let session = LanguageModelSession(
             instructions: """
-            You turn a list of short video moments from someone's day into a warm, \
-            first-person diary entry, as if they wrote it themselves at night. \
-            Write naturally and concretely. Never invent events that are not in the list. \
+            You turn a list of short video moments from someone's day into ONE \
+            ultra-short social-media caption they could post as-is. \
+            Hard limit: 10 words or fewer. First person, playful, at most two \
+            emojis. Never invent events that are not in the list. \
             \(languageRule)
             """
         )

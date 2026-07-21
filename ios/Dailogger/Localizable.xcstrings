@@ -501,6 +501,26 @@
         }
       }
     },
+    "%@ 🎬 day logged ✨": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ 🎬 오늘도 기록 완료 ✨"
+          }
+        }
+      }
+    },
+    "Today in %lld clips, nailed it ✨": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "오늘 하루 %lld컷 순삭 ✨"
+          }
+        }
+      }
+    },
     "Write this day's blog": {
       "localizations": {
         "ko": {

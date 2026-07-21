@@ -287,21 +287,24 @@ enum ReelComposer {
             }
         }
 
-        // Blog text floats over the media on a translucent ink panel.
+        // Blog line lives on the paper below the card — like a note under a
+        // polaroid — so it never covers the video.
         let trimmedBlog = blogText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedBlog.isEmpty {
-            let display = truncated(trimmedBlog, limit: 220)
-            let blogImage = ReelOverlayRenderer.blogPanel(
+            let display = truncated(trimmedBlog, limit: 90)
+            let blogImage = ReelOverlayRenderer.plainText(
                 display,
-                fontSize: 13 * scale,
-                maxWidth: mediaW * 0.85,
-                ink: ink
+                fontSize: 13.5 * scale,
+                color: ink,
+                maxWidth: W * 0.8,
+                maxHeight: max(bottomMargin - 24 * scale, 16 * scale)
             )
+            let blogTop = cardTop + cardH + shadowOffset + 12 * scale
             parentLayer.addSublayer(imageLayer(
                 blogImage,
                 origin: CGPoint(
-                    x: mediaX + (mediaW - blogImage.size.width) / 2,
-                    y: flipY(mediaTop + (mediaH - blogImage.size.height) / 2, blogImage.size.height)
+                    x: (W - blogImage.size.width) / 2,
+                    y: flipY(blogTop, blogImage.size.height)
                 )
             ))
         }
@@ -367,22 +370,24 @@ enum ReelComposer {
             }
         }
 
+        // Blog line as a compact caption box, bottom-centered just above the
+        // platform-UI safe zone (bottom ~25%) — subtitle style, the center
+        // of the video stays clear.
         let trimmedBlog = blogText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedBlog.isEmpty {
-            let display = truncated(trimmedBlog, limit: 220)
-            // Slightly narrower than the frame so platform side buttons
-            // (likes/comments on the right edge) don't cover the text.
-            let blogImage = ReelOverlayRenderer.blogPanel(
+            let display = truncated(trimmedBlog, limit: 90)
+            let blogImage = ReelOverlayRenderer.captionBox(
                 display,
-                fontSize: 15 * scale,
+                fontSize: 13 * scale,
                 maxWidth: W * 0.78,
                 ink: ink
             )
+            let blogTop = H * 0.73 - blogImage.size.height
             parentLayer.addSublayer(imageLayer(
                 blogImage,
                 origin: CGPoint(
                     x: (W - blogImage.size.width) / 2,
-                    y: (H - blogImage.size.height) / 2
+                    y: flipY(blogTop, blogImage.size.height)
                 )
             ))
         }

@@ -68,7 +68,7 @@ struct DailyBlogView: View {
                     TextField("Write about your day…", text: $bodyText, axis: .vertical)
                         .font(.hlRegular(15))
                         .foregroundStyle(HL.ink)
-                        .lineLimit(6...30)
+                        .lineLimit(1...2)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(18)
                         .hardCard(radius: 18)

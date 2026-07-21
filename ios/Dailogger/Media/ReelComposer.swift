@@ -234,13 +234,22 @@ enum ReelComposer {
         let footerMaxWidth = mediaW - 24 * scale
         if !trimmedBlog.isEmpty {
             let blogTop = stripTop + 27 * scale
-            let blogImage = ReelOverlayRenderer.plainText(
-                truncated(trimmedBlog, limit: 90),
-                fontSize: 13 * scale,
-                color: ink,
-                maxWidth: footerMaxWidth,
-                maxHeight: stripTop + captionStripH - blogTop - 6 * scale
+            let available = stripTop + captionStripH - blogTop - 6 * scale
+            let display = truncated(trimmedBlog, limit: 90)
+
+            // Shrink the font until the whole line fits the strip instead of
+            // clipping the bottom of the text.
+            var fontSize = 13 * scale
+            var blogImage = ReelOverlayRenderer.plainText(
+                display, fontSize: fontSize, color: ink, maxWidth: footerMaxWidth
             )
+            while blogImage.size.height > available && fontSize > 8 * scale {
+                fontSize -= scale
+                blogImage = ReelOverlayRenderer.plainText(
+                    display, fontSize: fontSize, color: ink, maxWidth: footerMaxWidth
+                )
+            }
+
             parentLayer.addSublayer(imageLayer(
                 blogImage,
                 origin: CGPoint(x: footerX, y: flipY(blogTop, blogImage.size.height))

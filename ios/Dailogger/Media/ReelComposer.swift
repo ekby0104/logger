@@ -227,38 +227,43 @@ enum ReelComposer {
         videoLayer.masksToBounds = true
         parentLayer.addSublayer(videoLayer)
 
-        // Card footer: place (per segment, gray) on the first line and the
-        // blog line (static, ink) where the caption used to sit.
+        // Card footer: place (per segment, gray) on the first line, and on
+        // the second line either the static blog line, or — when there is no
+        // blog — the per-segment caption, so the strip never looks empty.
         let stripTop = mediaTop + mediaH
         let footerX = mediaX + 12 * scale
         let footerMaxWidth = mediaW - 24 * scale
-        if !trimmedBlog.isEmpty {
-            let blogTop = stripTop + 27 * scale
-            let available = stripTop + captionStripH - blogTop - 6 * scale
-            let display = truncated(trimmedBlog, limit: 90)
+        let footerLineTop = stripTop + 27 * scale
+        let hasBlog = !trimmedBlog.isEmpty
 
-            // Shrink the font until the whole line fits the strip instead of
-            // clipping the bottom of the text.
+        // Shrinks the font until the whole line fits the strip instead of
+        // clipping the bottom of the text.
+        func footerLineImage(_ text: String) -> UIImage {
+            let available = stripTop + captionStripH - footerLineTop - 6 * scale
             var fontSize = 13 * scale
-            var blogImage = ReelOverlayRenderer.plainText(
-                display, fontSize: fontSize, color: ink, maxWidth: footerMaxWidth
+            var image = ReelOverlayRenderer.plainText(
+                text, fontSize: fontSize, color: ink, maxWidth: footerMaxWidth
             )
-            while blogImage.size.height > available && fontSize > 8 * scale {
+            while image.size.height > available && fontSize > 8 * scale {
                 fontSize -= scale
-                blogImage = ReelOverlayRenderer.plainText(
-                    display, fontSize: fontSize, color: ink, maxWidth: footerMaxWidth
+                image = ReelOverlayRenderer.plainText(
+                    text, fontSize: fontSize, color: ink, maxWidth: footerMaxWidth
                 )
             }
+            return image
+        }
 
+        if hasBlog {
+            let blogImage = footerLineImage(truncated(trimmedBlog, limit: 90))
             parentLayer.addSublayer(imageLayer(
                 blogImage,
-                origin: CGPoint(x: footerX, y: flipY(blogTop, blogImage.size.height))
+                origin: CGPoint(x: footerX, y: flipY(footerLineTop, blogImage.size.height))
             ))
         }
 
         // Per-segment time label (left of the dot), place line (footer), and
-        // caption as a white box over the bottom of the video (matching the
-        // fullscreen style).
+        // the caption — boxed over the video when the footer holds the blog,
+        // in the footer itself otherwise.
         for segment in segments {
             let timeImage = ReelOverlayRenderer.plainText(
                 segment.moment.timeLabel,
@@ -295,19 +300,29 @@ enum ReelComposer {
 
             let caption = truncated(segment.moment.caption, limit: 90)
             if !caption.isEmpty {
-                let captionImage = ReelOverlayRenderer.captionBox(
-                    caption,
-                    fontSize: 12.5 * scale,
-                    maxWidth: mediaW - 20 * scale,
-                    ink: ink
-                )
-                let captionTop = mediaTop + mediaH - captionImage.size.height - 10 * scale
-                let captionLayer = imageLayer(
-                    captionImage,
-                    origin: CGPoint(x: mediaX + 10 * scale, y: flipY(captionTop, captionImage.size.height))
-                )
-                setVisibility(captionLayer, start: segment.start, duration: segment.duration, totalSeconds: totalSeconds)
-                parentLayer.addSublayer(captionLayer)
+                if hasBlog {
+                    let captionImage = ReelOverlayRenderer.captionBox(
+                        caption,
+                        fontSize: 12.5 * scale,
+                        maxWidth: mediaW - 20 * scale,
+                        ink: ink
+                    )
+                    let captionTop = mediaTop + mediaH - captionImage.size.height - 10 * scale
+                    let captionLayer = imageLayer(
+                        captionImage,
+                        origin: CGPoint(x: mediaX + 10 * scale, y: flipY(captionTop, captionImage.size.height))
+                    )
+                    setVisibility(captionLayer, start: segment.start, duration: segment.duration, totalSeconds: totalSeconds)
+                    parentLayer.addSublayer(captionLayer)
+                } else {
+                    let captionImage = footerLineImage(caption)
+                    let captionLayer = imageLayer(
+                        captionImage,
+                        origin: CGPoint(x: footerX, y: flipY(footerLineTop, captionImage.size.height))
+                    )
+                    setVisibility(captionLayer, start: segment.start, duration: segment.duration, totalSeconds: totalSeconds)
+                    parentLayer.addSublayer(captionLayer)
+                }
             }
         }
 

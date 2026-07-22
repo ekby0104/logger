@@ -106,9 +106,15 @@ final class CameraService: NSObject, AVCaptureFileOutputRecordingDelegate {
     }
 
     private func applyPortraitRotation() {
-        if let connection = movieOutput.connection(with: .video),
-           connection.isVideoRotationAngleSupported(90) {
+        guard let connection = movieOutput.connection(with: .video) else { return }
+        if connection.isVideoRotationAngleSupported(90) {
             connection.videoRotationAngle = 90
+        }
+        // Record the front camera mirrored, matching what the preview shows —
+        // otherwise selfie clips play back flipped from what the user saw.
+        if connection.isVideoMirroringSupported {
+            connection.automaticallyAdjustsVideoMirroring = false
+            connection.isVideoMirrored = videoInput?.device.position == .front
         }
     }
 

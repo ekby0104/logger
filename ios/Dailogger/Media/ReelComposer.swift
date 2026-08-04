@@ -43,8 +43,10 @@ enum ReelComposer {
 
         var cursor = CMTime.zero
         var segments: [Segment] = []
-        var renderSize = CGSize(width: 1080, height: 1920)
-        var isFirst = true
+        // Fixed 9:16 canvas: Shorts/Reels/Stories display exactly this ratio.
+        // Sizing the canvas from the first clip (e.g. a 9:19.5 phone-screen
+        // video from the library) made platforms crop the whole reel frame.
+        let renderSize = CGSize(width: 1080, height: 1920)
         let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: videoTrack)
 
         for clip in clips {
@@ -63,10 +65,6 @@ enum ReelComposer {
                 let natural = try await track.load(.naturalSize)
                 let rect = CGRect(origin: .zero, size: natural).applying(transform)
                 let display = CGSize(width: abs(rect.width), height: abs(rect.height))
-                if isFirst {
-                    renderSize = display
-                    isFirst = false
-                }
                 let originFix = CGAffineTransform(
                     translationX: rect.minX < 0 ? -rect.minX : 0,
                     y: rect.minY < 0 ? -rect.minY : 0

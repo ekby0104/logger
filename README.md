@@ -24,7 +24,7 @@
 ## 저장소 구조
 
 ```
-logger/
+dailogger/
 ├── ios/                 # ★ iOS 앱 (SwiftUI) — 실행 방법은 ios/README.md
 │   ├── Dailogger.xcodeproj
 │   ├── Dailogger/          # 앱 타깃

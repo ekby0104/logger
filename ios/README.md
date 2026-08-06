@@ -11,11 +11,15 @@ SwiftUI 네이티브 앱. **v1.0 (빌드 4) App Store 심사 제출 완료** 상
 ## 실행 방법 (맥북)
 
 ```sh
-git clone <repo-url>
-cd logger
+git clone https://github.com/yuemyname/dailogger.git
+cd dailogger
 git checkout claude/harulog-wireframe-impl-1tefir
 open ios/Dailogger.xcodeproj
 ```
+
+> 저장소 이름이 `ekby0104/logger` → `yuemyname/dailogger`로 바뀌었습니다.
+> 예전에 클론한 폴더가 있다면 원격 주소만 갱신하면 됩니다:
+> `git remote set-url origin https://github.com/yuemyname/dailogger.git`
 
 1. Xcode에서 프로젝트 열기
 2. 프로젝트 설정 → **Signing & Capabilities** → Team에 본인 Apple ID 선택 (앱·위젯 두 타깃 모두)

@@ -1,6 +1,13 @@
 # App Store 출시 체크리스트
 
-**상태: v1.0 (빌드 4) 심사 제출 완료** 🎉 — 보통 1~3일 내 결과가 옵니다.
+**상태: 1.0 / 1.0.1 / 1.0.2 승인 완료** 🎉 — 다음 업데이트는 **1.0.3 (빌드 7)** 로 준비 중.
+
+> ⚠️ **저장소 이름 변경 확인 필요**: `ekby0104/logger` → `yuemyname/dailogger`로 바뀌었습니다.
+> App Store Connect에 등록한 **개인정보 처리방침 / 지원 URL이 GitHub Pages 주소**라면
+> 예전 주소(`ekby0104.github.io/logger/...`)는 더 이상 열리지 않을 수 있습니다.
+> 새 주소(`yuemyname.github.io/dailogger/privacy.html`, `.../support.html`)가 실제로 열리는지
+> 브라우저로 확인하고, 안 되면 Settings → Pages를 다시 켠 뒤 App Store Connect의 URL을 갱신하세요.
+> (심사원이 접속 못 하면 리젝 사유가 됩니다.)
 
 ## 제출까지 완료된 것 ☑️
 

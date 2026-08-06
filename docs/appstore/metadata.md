@@ -132,7 +132,7 @@ diary,video diary,vlog,journal,daily,moments,timeline,AI diary,streak,memories,l
 | 카테고리 (기본) | 라이프스타일 (Lifestyle) |
 | 카테고리 (보조) | 사진 및 비디오 (Photo & Video) |
 | 연령 등급 | 모든 설문 "아니요" → **4+** |
-| 저작권 | © 2026 ekby0104 |
+| 저작권 | © 2026 yuemyname |
 | 지원 URL | GitHub Pages 주소 (checklist 참고) |
 | 개인정보 처리방침 URL | GitHub Pages 주소 (checklist 참고) |
 | 가격 | 무료 |

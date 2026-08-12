@@ -43,7 +43,7 @@ struct RootTabView: View {
         .environment(model)
         .task {
             model.cleanupLegacyData(context: context)
-            model.refreshWidgetAndReminder(context: context)
+            model.bootstrapWidgetAndReminder(context: context)
             model.remeasureDurations(context: context)
         }
     }

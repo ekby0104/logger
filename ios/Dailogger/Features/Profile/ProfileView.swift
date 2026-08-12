@@ -219,7 +219,7 @@ struct ProfileView: View {
         Task { @MainActor in
             if await ReminderService.requestAuthorization() {
                 reminderEnabled = true
-                model.refreshWidgetAndReminder(context: context)
+                model.bootstrapWidgetAndReminder(context: context)
                 model.flashToast(String(localized: "Daily reminder is on"))
             } else {
                 model.flashToast(String(localized: "Allow notifications in Settings"))

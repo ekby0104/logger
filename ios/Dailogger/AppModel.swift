@@ -361,7 +361,7 @@ final class AppModel {
         tab = .today
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         flashToast(String(localized: "Saved to your timeline"))
-        refreshWidgetAndReminder(context: context)
+        refreshWidgetAfterSavingMoment(context: context)
     }
 
     func deleteMoment(_ moment: Moment, context: ModelContext) {
@@ -439,6 +439,11 @@ final class AppModel {
         log.blogText = blogBody
         log.blogIsAI = blogIsAI
         log.isBlogReady = true
+        // A blog can be saved for a day with no clip, which still counts as
+        // an active day in the streak. These saves are less frequent than
+        // clips, so do the exact refresh here rather than maintaining a
+        // second copy of the history.
+        refreshWidgetAndReminder(context: context)
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         flashToast(String(localized: "Blog saved"))
     }
@@ -484,13 +489,18 @@ final class AppModel {
     /// text — real saves always have both) and duplicate DailyLogs from the
     /// short-lived auto-blog feature.
     func cleanupLegacyData(context: ModelContext) {
-        let allMoments = (try? context.fetch(FetchDescriptor<Moment>())) ?? []
+        let doneKey = "legacyDataCleaned.v1"
+        guard !UserDefaults.standard.bool(forKey: doneKey) else { return }
+
+        guard let allMoments = try? context.fetch(FetchDescriptor<Moment>()),
+              let logs = try? context.fetch(FetchDescriptor<DailyLog>())
+        else { return }
+
         for moment in allMoments where moment.videoFileName == nil {
             context.delete(moment)
         }
 
         let calendar = Calendar.current
-        let logs = (try? context.fetch(FetchDescriptor<DailyLog>())) ?? []
         for log in logs where log.blogText == nil {
             context.delete(log)
         }
@@ -501,6 +511,7 @@ final class AppModel {
                 context.delete(log)
             }
         }
+        UserDefaults.standard.set(true, forKey: doneKey)
     }
 
     /// One-time fix-up for moments saved before durations were measured
@@ -525,14 +536,81 @@ final class AppModel {
         }
     }
 
-    /// Recomputes streak/today-count for the widget and reschedules the
-    /// daily reminder. Called on launch and whenever moments change.
+    /// Uses cached aggregate data at launch. The cache is seeded by the exact
+    /// refresh below, then only today's moments are fetched on later launches.
+    func bootstrapWidgetAndReminder(context: ModelContext) {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        let todayMoments = moments(on: today, context: context)
+
+        guard let snapshot = WidgetBridge.statsSnapshot() else {
+            refreshWidgetAndReminder(context: context)
+            return
+        }
+
+        let cachedDay = calendar.startOfDay(for: snapshot.calculatedDay)
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+        let cachedActiveDay = snapshot.lastActiveDay.map(calendar.startOfDay(for:))
+        let hasMomentToday = !todayMoments.isEmpty
+
+        let streak: Int
+        let lastActiveDay: Date?
+        if cachedDay == today {
+            streak = snapshot.streak
+            lastActiveDay = cachedActiveDay
+        } else if hasMomentToday {
+            streak = cachedActiveDay == yesterday ? snapshot.streak + 1 : 1
+            lastActiveDay = today
+        } else {
+            streak = cachedActiveDay == yesterday ? snapshot.streak : 0
+            lastActiveDay = cachedActiveDay
+        }
+
+        WidgetBridge.update(
+            streak: streak, todayCount: todayMoments.count, lastActiveDay: lastActiveDay
+        )
+        ReminderService.reschedule(hasMomentToday: hasMomentToday)
+    }
+
+    /// Exact recalculation for changes that can affect a past day (deletion
+    /// and blog editing), or when no widget cache exists yet.
     func refreshWidgetAndReminder(context: ModelContext) {
         let todayMoments = moments(on: .now, context: context)
         let logs = (try? context.fetch(FetchDescriptor<DailyLog>())) ?? []
         let allMoments = (try? context.fetch(FetchDescriptor<Moment>())) ?? []
-        let streak = Stats.streak(recordDates: logs.map(\.date) + allMoments.map(\.createdAt))
-        WidgetBridge.update(streak: streak, todayCount: todayMoments.count)
+        let recordDates = logs.map(\.date) + allMoments.map(\.createdAt)
+        let streak = Stats.streak(recordDates: recordDates)
+        let lastActiveDay = recordDates.map { Calendar.current.startOfDay(for: $0) }.max()
+        WidgetBridge.update(
+            streak: streak, todayCount: todayMoments.count, lastActiveDay: lastActiveDay
+        )
+        ReminderService.reschedule(hasMomentToday: !todayMoments.isEmpty)
+    }
+
+    /// New clips are always timestamped today. Starting from a valid cached
+    /// streak therefore needs only a one-day query, avoiding a full history
+    /// fetch on the common save path.
+    private func refreshWidgetAfterSavingMoment(context: ModelContext) {
+        guard let snapshot = WidgetBridge.statsSnapshot() else {
+            refreshWidgetAndReminder(context: context)
+            return
+        }
+
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+        let cachedActiveDay = snapshot.lastActiveDay.map(calendar.startOfDay(for:))
+        let streak: Int
+        if cachedActiveDay == today {
+            streak = snapshot.streak
+        } else if cachedActiveDay == yesterday {
+            streak = snapshot.streak + 1
+        } else {
+            streak = 1
+        }
+
+        let todayMoments = moments(on: today, context: context)
+        WidgetBridge.update(streak: streak, todayCount: todayMoments.count, lastActiveDay: today)
         ReminderService.reschedule(hasMomentToday: !todayMoments.isEmpty)
     }
 

@@ -9,6 +9,49 @@ struct CalendarView: View {
     @State private var monthOffset = 0
     @State private var selectedDay = Calendar.current.component(.day, from: .now)
 
+    /// A single pass over the queried records for the visible month. Keeping
+    /// the lookup tables together avoids re-filtering every record for each
+    /// calendar cell and for each selected-day subview.
+    private struct MonthRecords {
+        let blogDays: Set<Int>
+        let momentDays: Set<Int>
+        let logsByDay: [Int: DailyLog]
+        let momentsByDay: [Int: [Moment]]
+
+        init(logs: [DailyLog], moments: [Moment], month: Date, calendar: Calendar) {
+            let components = calendar.dateComponents([.year, .month], from: month)
+            let start = calendar.date(from: components) ?? month
+            let end = calendar.date(byAdding: .month, value: 1, to: start) ?? start
+
+            var blogDays: Set<Int> = []
+            var logsByDay: [Int: DailyLog] = [:]
+            for log in logs where log.date >= start && log.date < end {
+                let day = calendar.component(.day, from: log.date)
+                logsByDay[day] = log
+                if log.blogText != nil {
+                    blogDays.insert(day)
+                }
+            }
+
+            var momentDays: Set<Int> = []
+            var momentsByDay: [Int: [Moment]] = [:]
+            for moment in moments where moment.createdAt >= start && moment.createdAt < end {
+                let day = calendar.component(.day, from: moment.createdAt)
+                momentDays.insert(day)
+                momentsByDay[day, default: []].append(moment)
+            }
+
+            self.blogDays = blogDays
+            self.momentDays = momentDays
+            self.logsByDay = logsByDay
+            self.momentsByDay = momentsByDay
+        }
+
+        var recordedDays: Set<Int> {
+            blogDays.union(momentDays)
+        }
+    }
+
     private var calendar: Calendar { Calendar.current }
 
     private var displayedMonth: Date {
@@ -31,27 +74,6 @@ struct CalendarView: View {
         calendar.component(.weekday, from: displayedMonth) - 1
     }
 
-    private var blogDays: Set<Int> {
-        Set(
-            logs.filter {
-                $0.blogText != nil &&
-                calendar.isDate($0.date, equalTo: displayedMonth, toGranularity: .month)
-            }
-            .map { calendar.component(.day, from: $0.date) }
-        )
-    }
-
-    /// Days in the displayed month that have at least one moment — these are
-    /// selectable even before a blog exists.
-    private var momentDays: Set<Int> {
-        Set(
-            moments.filter {
-                calendar.isDate($0.createdAt, equalTo: displayedMonth, toGranularity: .month)
-            }
-            .map { calendar.component(.day, from: $0.createdAt) }
-        )
-    }
-
     private var todayDay: Int {
         calendar.component(.day, from: .now)
     }
@@ -64,20 +86,16 @@ struct CalendarView: View {
         return calendar.date(from: dayComponents) ?? displayedMonth
     }
 
-    private var selectedLog: DailyLog? {
-        logs.first { calendar.isDate($0.date, inSameDayAs: selectedDate) }
-    }
-
-    private var selectedDayMoments: [Moment] {
-        moments.filter { calendar.isDate($0.createdAt, inSameDayAs: selectedDate) }
-    }
-
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
 
     var body: some View {
+        let records = MonthRecords(
+            logs: logs, moments: moments, month: displayedMonth, calendar: calendar
+        )
+
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                header
+                header(records: records)
                     .padding(.bottom, 20)
 
                 LazyVGrid(columns: columns, spacing: 2) {
@@ -99,12 +117,12 @@ struct CalendarView: View {
                             Color.clear
                                 .aspectRatio(0.78, contentMode: .fit)
                         } else {
-                            dayCell(slot - leadingBlanks + 1)
+                            dayCell(slot - leadingBlanks + 1, records: records)
                         }
                     }
                 }
 
-                detailCard
+                detailCard(records: records)
                     .padding(.top, 22)
             }
             .padding(.horizontal, 18)
@@ -114,13 +132,13 @@ struct CalendarView: View {
         .scrollIndicators(.hidden)
     }
 
-    private var header: some View {
+    private func header(records: MonthRecords) -> some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(monthTitle)
                     .font(.hl(27))
                     .foregroundStyle(HL.ink)
-                Text("You logged \(blogDays.union(momentDays).count) days this month")
+                Text("You logged \(records.recordedDays.count) days this month")
                     .font(.hlRegular(13))
                     .foregroundStyle(HL.gray)
             }
@@ -160,13 +178,17 @@ struct CalendarView: View {
         if isCurrentMonth {
             selectedDay = todayDay
         } else {
-            selectedDay = blogDays.union(momentDays).min() ?? 1
+            // This one lookup is only performed after a month-navigation tap.
+            let records = MonthRecords(
+                logs: logs, moments: moments, month: displayedMonth, calendar: calendar
+            )
+            selectedDay = records.recordedDays.min() ?? 1
         }
     }
 
-    private func dayCell(_ day: Int) -> some View {
-        let hasBlog = blogDays.contains(day)
-        let hasRecords = hasBlog || momentDays.contains(day)
+    private func dayCell(_ day: Int, records: MonthRecords) -> some View {
+        let hasBlog = records.blogDays.contains(day)
+        let hasRecords = records.recordedDays.contains(day)
         let isToday = isCurrentMonth && day == todayDay
         let isSelected = day == selectedDay
 
@@ -199,8 +221,9 @@ struct CalendarView: View {
         .buttonStyle(.plain)
     }
 
-    private var detailCard: some View {
-        let log = selectedLog
+    private func detailCard(records: MonthRecords) -> some View {
+        let log = records.logsByDay[selectedDay]
+        let selectedDayMoments = records.momentsByDay[selectedDay] ?? []
         let meta: String
         if log?.blogText != nil {
             meta = String(localized: "\(selectedDayMoments.count) clips · blog ready")
@@ -229,7 +252,7 @@ struct CalendarView: View {
             }
             .buttonStyle(.plain)
 
-            thumbnailStrip
+            thumbnailStrip(moments: selectedDayMoments)
 
             if let log, log.blogText != nil {
                 Button {
@@ -270,12 +293,12 @@ struct CalendarView: View {
 
     /// Four thumbnails fill the row; more than four scroll horizontally,
     /// snapping per cell. Empty slots keep the four-column rhythm.
-    private var thumbnailStrip: some View {
+    private func thumbnailStrip(moments: [Moment]) -> some View {
         Group {
-            if selectedDayMoments.count > 4 {
+            if moments.count > 4 {
                 ScrollView(.horizontal) {
                     HStack(spacing: 7) {
-                        ForEach(selectedDayMoments) { moment in
+                        ForEach(moments) { moment in
                             thumbCell(moment)
                                 .containerRelativeFrame(.horizontal, count: 4, spacing: 7)
                         }
@@ -286,11 +309,11 @@ struct CalendarView: View {
                 .scrollTargetBehavior(.viewAligned)
             } else {
                 HStack(spacing: 7) {
-                    ForEach(selectedDayMoments) { moment in
+                    ForEach(moments) { moment in
                         thumbCell(moment)
                             .frame(maxWidth: .infinity)
                     }
-                    ForEach(0..<(4 - selectedDayMoments.count), id: \.self) { _ in
+                    ForEach(0..<(4 - moments.count), id: \.self) { _ in
                         PlaceholderBox(radius: 10)
                             .aspectRatio(9.0 / 16.0, contentMode: .fit)
                             .frame(maxWidth: .infinity)
